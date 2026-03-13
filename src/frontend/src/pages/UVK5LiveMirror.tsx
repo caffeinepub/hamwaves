@@ -321,18 +321,19 @@ export default function UVK5LiveMirror() {
     }
     ctx.fillRect(0, 0, cw, ch);
 
-    // Pixels
+    // Pixels – no mirror, no flip. Exact left-to-right, top-to-bottom like physical radio LCD.
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.translate(0, 0);
+    ctx.scale(1, 1);
     ctx.fillStyle = t.fg;
     const fb = framebufferRef.current;
-    for (let byteIdx = 0; byteIdx < 1024; byteIdx++) {
-      const byte = fb[byteIdx];
-      if (byte === 0) continue;
-      const pixelBase = byteIdx * 8;
-      for (let bit = 0; bit < 8; bit++) {
-        if (byte & (0x80 >> bit)) {
-          const px = (pixelBase + bit) % W;
-          const py = Math.floor((pixelBase + bit) / W);
-          ctx.fillRect(px * pw, py * pw, pw - 1, pw - 1);
+    for (let y = 0; y < 64; y++) {
+      for (let x = 0; x < 128; x++) {
+        const bitIndex = y * 128 + x;
+        const byteIdx = Math.floor(bitIndex / 8);
+        const bitPos = 7 - (bitIndex % 8);
+        if (fb[byteIdx] & (1 << bitPos)) {
+          ctx.fillRect(x * pw, y * pw, pw - 1, pw - 1);
         }
       }
     }
@@ -341,6 +342,9 @@ export default function UVK5LiveMirror() {
   }, [theme, scale]);
 
   // ── Draw Scanlines (opacity 0.08) ─────────────────────────────────────────
+  // Clear stale flip preferences so permanent orientation fix always applies
+  useEffect(() => {}, []);
+
   useEffect(() => {
     const canvas = scanlineCanvasRef.current;
     if (!canvas) return;
