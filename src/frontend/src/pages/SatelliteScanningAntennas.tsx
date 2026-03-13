@@ -762,7 +762,7 @@ export default function SatelliteScanningAntennas() {
               }}
             />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {shortsLinks.map((short, i) => (
               <motion.a
                 key={short.id}
@@ -800,15 +800,7 @@ export default function SatelliteScanningAntennas() {
           </div>
 
           {/* Subscribe CTA */}
-          <div className="text-center">
-            <h3 className="font-display font-black text-2xl sm:text-3xl mb-2">
-              Subscribe to HamWaves for more RX scanning &amp; satellite
-              listening tips!
-            </h3>
-            <p className="text-sm mb-6" style={{ color: "#606060" }}>
-              Got your first satellite signal? Share in the comments! New guides
-              &amp; Shorts weekly.
-            </p>
+          <div className="text-center" style={{ marginTop: "50px" }}>
             <a
               href="https://www.youtube.com/@dmtoozer"
               target="_blank"
