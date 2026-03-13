@@ -1,0 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.25rem;
+    /* HamWaves dark-mode-only design system */
+    --background: 0.07 0 0;
+    --foreground: 0.95 0 0;
+    --card: 0.1 0 0;
+    --card-foreground: 0.95 0 0;
+    --popover: 0.12 0 0;
+    --popover-foreground: 0.95 0 0;
+    --primary: 0.85 0.18 196;
+    --primary-foreground: 0.07 0 0;
+    --secondary: 0.15 0 0;
+    --secondary-foreground: 0.85 0 0;
+    --muted: 0.13 0 0;
+    --muted-foreground: 0.45 0 0;
+    --accent: 0.85 0.18 196;
+    --accent-foreground: 0.07 0 0;
+    --destructive: 0.577 0.245 27.325;
+    --destructive-foreground: 0.985 0 0;
+    --border: 0.2 0 0;
+    --input: 0.2 0 0;
+    --ring: 0.85 0.18 196;
+    --chart-1: 0.85 0.18 196;
+    --chart-2: 0.6 0.118 184.704;
+    --chart-3: 0.398 0.07 227.392;
+    --chart-4: 0.828 0.189 84.429;
+    --chart-5: 0.769 0.188 70.08;
+    --sidebar: 0.1 0 0;
+    --sidebar-foreground: 0.95 0 0;
+    --sidebar-primary: 0.85 0.18 196;
+    --sidebar-primary-foreground: 0.07 0 0;
+    --sidebar-accent: 0.15 0 0;
+    --sidebar-accent-foreground: 0.95 0 0;
+    --sidebar-border: 0.2 0 0;
+    --sidebar-ring: 0.85 0.18 196;
+    /* Cyan accent raw values */
+    --cyan: 0.85 0.18 196;
+    --cyan-glow: rgba(0, 240, 255, 0.15);
+    --cyan-border: rgba(0, 240, 255, 0.25);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+}
+
+@layer utilities {
+  .glow-cyan {
+    text-shadow: 0 0 20px rgba(0, 240, 255, 0.7), 0 0 40px rgba(0, 240, 255, 0.3);
+  }
+  .border-cyan-glow {
+    border-color: rgba(0, 240, 255, 0.25);
+    box-shadow: 0 0 0 1px rgba(0, 240, 255, 0.1), inset 0 0 20px rgba(0, 240, 255, 0.03);
+  }
+  .card-dark {
+    background: #111111;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
