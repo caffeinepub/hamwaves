@@ -1,3 +1,4 @@
+import { useNavigate } from "@tanstack/react-router";
 import {
   Antenna,
   ChevronLeft,
@@ -9,6 +10,7 @@ import {
 import { type Variants, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import RadioWavesBg from "../components/RadioWavesBg";
+import { activeGuides, allVideos } from "../data/siteData";
 
 const featuredImages = [
   {
@@ -27,33 +29,56 @@ const fadeUp: Variants = {
   }),
 };
 
-function formatCount(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return `${n}`;
+function useCountUp(target: number, duration = 1200) {
+  const [count, setCount] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+  const started = useRef(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !started.current) {
+          started.current = true;
+          const start = performance.now();
+          const tick = (now: number) => {
+            const progress = Math.min((now - start) / duration, 1);
+            setCount(Math.round(progress * target));
+            if (progress < 1) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        }
+      },
+      { threshold: 0.3 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [target, duration]);
+  return { count, ref };
 }
 
 export default function Home() {
   const [activeSlide, setActiveSlide] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [videoCount, setVideoCount] = useState<string | null>(null);
-  const [subscriberCount, setSubscriberCount] = useState<string | null>(null);
-  const [statsLive, setStatsLive] = useState(false);
+  const navigate = useNavigate();
 
+  const { count: videoCount, ref: videoRef } = useCountUp(allVideos.length);
+  const { count: guideCount, ref: guideRef } = useCountUp(activeGuides.length);
+
+  // SEO meta
   useEffect(() => {
-    fetch("https://yt.lemnoslife.com/channels?handle=@dmtoozer")
-      .then((r) => r.json())
-      .then((data) => {
-        const stats = data?.items?.[0]?.statistics;
-        if (stats) {
-          setVideoCount(formatCount(Number(stats.videoCount)));
-          setSubscriberCount(formatCount(Number(stats.subscriberCount)));
-          setStatsLive(true);
-        }
-      })
-      .catch(() => {
-        // fallback to static values — leave state null so we show statics
-      });
+    document.title =
+      "Beginner Ham Radio Scanning RX Only | HamWaves – Budget Radio Guides & Reviews";
+    let meta = document.querySelector<HTMLMetaElement>(
+      'meta[name="description"]',
+    );
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "description";
+      document.head.appendChild(meta);
+    }
+    meta.content =
+      "Curious beginner exploring ham radio scanning with budget radios. Honest reviews, CHIRP guides, custom firmware tips (Egzumer/IJV), and RX-only listening for Quansheng UV-K5 & UV-K1.";
   }, []);
 
   const startAuto = useCallback(() => {
@@ -86,11 +111,6 @@ export default function Home() {
     startAuto();
   };
 
-  const stats = [
-    { val: videoCount, fallback: "150+", label: "Videos" },
-    { val: subscriberCount, fallback: "5K+", label: "Subscribers" },
-  ];
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -117,17 +137,25 @@ export default function Home() {
         />
 
         <div className="relative z-10 flex flex-col items-center text-center px-4">
+          {/* Logo */}
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="float-anim mb-3"
+            className="float-anim mt-24 sm:mt-28 mb-6"
           >
-            <img
-              src="/assets/generated/hamwaves-logo-transparent.dim_512x512.png"
-              alt="HamWaves"
-              className="w-40 h-40 sm:w-48 sm:h-48 object-contain drop-shadow-[0_0_30px_rgba(0,240,255,0.5)]"
-            />
+            <motion.div
+              className="logo-hero-box"
+              whileHover={{ scale: 1.1 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            >
+              <img
+                src="/assets/generated/hamwaves-logo-transparent.dim_512x512.png"
+                alt="HamWaves"
+                className="w-full h-full object-contain"
+                style={{ imageRendering: "auto" }}
+              />
+            </motion.div>
           </motion.div>
 
           <motion.h1
@@ -135,7 +163,8 @@ export default function Home() {
             variants={fadeUp}
             initial="hidden"
             animate="visible"
-            className="font-display font-black text-3xl sm:text-5xl lg:text-7xl leading-tight mb-3 glow-cyan"
+            className="font-display font-black text-3xl sm:text-5xl lg:text-7xl leading-tight mb-3 mt-6"
+            style={{ color: "#00f0ff" }}
           >
             Tuning Into the World
             <br />
@@ -212,6 +241,82 @@ export default function Home() {
         className="max-w-4xl mx-auto px-4 py-24"
         data-ocid="home.section"
       >
+        <style>{`
+          .logo-hero-box {
+            width: 176px;
+            height: 176px;
+            border: 2px solid rgba(0,240,255,0.65);
+            border-radius: 16px;
+            background: rgba(0,0,0,0.25);
+            box-shadow: 0 0 40px rgba(0,240,255,0.45), 0 0 80px rgba(0,240,255,0.18);
+            padding: 8px;
+            cursor: default;
+            transition: box-shadow 0.3s ease;
+          }
+          .logo-hero-box:hover {
+            animation: logoPulse 1.5s ease-in-out infinite;
+            box-shadow: 0 0 60px rgba(0,240,255,0.7), 0 0 120px rgba(0,240,255,0.3);
+          }
+          @media (min-width: 640px) {
+            .logo-hero-box {
+              width: 224px;
+              height: 224px;
+            }
+          }
+          @media (min-width: 1024px) {
+            .logo-hero-box {
+              width: 272px;
+              height: 272px;
+            }
+          }
+          @keyframes logoPulse {
+            0%, 100% { box-shadow: 0 0 60px rgba(0,240,255,0.65), 0 0 120px rgba(0,240,255,0.25); }
+            50% { box-shadow: 0 0 90px rgba(0,240,255,0.9), 0 0 160px rgba(0,240,255,0.45); }
+          }
+          .kw-cyan {
+            color: #00f0ff;
+            cursor: default;
+          }
+          .kw-purple {
+            color: #a855f7;
+            cursor: default;
+          }
+          @keyframes cardPulseCyan {
+            0%, 100% { box-shadow: 0 0 20px rgba(0,240,255,0.15); }
+            50% { box-shadow: 0 0 35px rgba(0,240,255,0.3); }
+          }
+          @keyframes cardPulsePurple {
+            0%, 100% { box-shadow: 0 0 20px rgba(168,85,247,0.15); }
+            50% { box-shadow: 0 0 35px rgba(168,85,247,0.3); }
+          }
+          .stat-card-cyan {
+            background: #111111;
+            border: 1px solid rgba(0,240,255,0.35);
+            box-shadow: 0 0 20px rgba(0,240,255,0.15);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: transform 0.3s ease;
+          }
+          .stat-card-cyan:hover {
+            transform: translateY(-5px);
+            animation: cardPulseCyan 1.8s ease-in-out infinite;
+          }
+          .stat-card-purple {
+            background: #111111;
+            border: 1px solid rgba(168,85,247,0.35);
+            box-shadow: 0 0 20px rgba(168,85,247,0.15);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: transform 0.3s ease;
+          }
+          .stat-card-purple:hover {
+            transform: translateY(-5px);
+            animation: cardPulsePurple 1.8s ease-in-out infinite;
+          }
+        `}</style>
+
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -225,66 +330,118 @@ export default function Home() {
               className="font-display font-bold text-2xl sm:text-3xl"
               style={{ color: "#e0e0e0" }}
             >
-              About <span className="glow-cyan">HamWaves</span>
+              About <span style={{ color: "#00f0ff" }}>HamWaves</span>
             </h2>
-            {/* Live indicator dot */}
-            {statsLive && (
-              <span className="flex items-center gap-1.5 ml-2">
-                <span className="relative flex h-2.5 w-2.5">
-                  <span
-                    className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-                    style={{ background: "#00f0ff" }}
-                  />
-                  <span
-                    className="relative inline-flex rounded-full h-2.5 w-2.5"
-                    style={{
-                      background: "#00f0ff",
-                      boxShadow: "0 0 6px #00f0ff",
-                    }}
-                  />
-                </span>
-                <span
-                  className="text-xs tracking-wider uppercase"
-                  style={{ color: "#00f0ff", opacity: 0.7 }}
-                >
-                  Live
-                </span>
-              </span>
-            )}
           </div>
-          <p
-            className="text-base sm:text-lg leading-relaxed"
-            style={{ color: "#909090" }}
+
+          {/* ---- New About paragraphs with fade-in ---- */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="space-y-4 mb-8"
           >
-            Passionate ham radio operator sharing the thrill of the airwaves.
-            From building antennas to chasing DX contacts – join the adventure!
-            Whether you&apos;re a seasoned operator or just getting your ticket,
-            HamWaves covers everything from gear reviews and antenna builds to
-            live contact sessions and field operations.
-          </p>
-          <div className="mt-8 grid grid-cols-2 gap-4 text-center">
-            {stats.map((stat) => (
-              <div key={stat.label} className="py-4">
-                <div className="font-display font-black text-2xl sm:text-3xl glow-cyan">
-                  {stat.val !== null ? (
-                    stat.val
-                  ) : (
-                    <span
-                      className="inline-block animate-pulse"
-                      style={{ color: "rgba(0,240,255,0.5)", minWidth: "3rem" }}
-                    >
-                      ...
-                    </span>
-                  )}
-                </div>
-                <div
-                  className="text-xs mt-1 tracking-wide uppercase"
-                  style={{ color: "#505050" }}
-                >
-                  {stat.label}
-                </div>
+            <p
+              className="text-base sm:text-lg leading-relaxed font-semibold"
+              style={{ color: "#c0c0c0" }}
+            >
+              Welcome, I&apos;m Damien — a curious beginner exploring the world
+              of radio scanning and looking to achieve my ham radio license!
+            </p>
+            <p
+              className="text-base sm:text-lg leading-relaxed"
+              style={{ color: "#909090" }}
+            >
+              I&apos;m learning the airwaves one frequency at a time, focusing
+              on <span className="kw-cyan">RX-only listening</span> with{" "}
+              <span className="kw-cyan">budget handhelds</span> like the{" "}
+              <span className="kw-cyan">Quansheng UV-K5(8)/UV-K1</span>.
+              HamWaves shares honest reviews, step-by-step guides, and tips for
+              new listeners: from programming budget radios with CHIRP, flashing
+              custom firmware (<span className="kw-purple">Egzumer/IJV</span>){" "}
+              for better scanning, choosing the best antennas for clearer
+              reception, to discovering airband, NOAA weather, marine, satcom,
+              ISS, and local ham frequencies – all without transmitting.
+            </p>
+            <p
+              className="text-base sm:text-lg leading-relaxed"
+              style={{ color: "#909090" }}
+            >
+              Whether you&apos;re just starting out, prepping for emergencies,
+              or enjoying the scanner hobby, join me as I test gear, share what
+              works (and what doesn&apos;t), and grow together in this exciting
+              RX-focused side of radio!
+            </p>
+
+            {/* CTA button */}
+            <div className="pt-2">
+              <motion.button
+                type="button"
+                onClick={() => navigate({ to: "/equipment-reviews" as const })}
+                className="btn-neon-cyan text-sm px-6 py-2.5"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.97 }}
+                data-ocid="home.guides_button"
+              >
+                Explore Budget Radio Guides →
+              </motion.button>
+            </div>
+          </motion.div>
+
+          {/* ======= STAT CARDS ======= */}
+          <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {/* VIDEOS card */}
+            <div
+              ref={videoRef}
+              className="stat-card-cyan"
+              data-ocid="home.item.1"
+            >
+              <div
+                className="font-display font-black text-sm tracking-[0.2em] uppercase mb-2"
+                style={{ color: "#00f0ff" }}
+              >
+                VIDEOS
               </div>
-            ))}
+              <div
+                className="font-display font-black text-5xl sm:text-6xl leading-none mb-2"
+                style={{ color: "#00f0ff" }}
+              >
+                {videoCount}
+              </div>
+              <div
+                className="text-xs tracking-wide"
+                style={{ color: "#505050" }}
+              >
+                Ham radio Shorts &amp; full videos
+              </div>
+            </div>
+
+            {/* GUIDES card */}
+            <div
+              ref={guideRef}
+              className="stat-card-purple"
+              data-ocid="home.item.2"
+            >
+              <div
+                className="font-display font-black text-sm tracking-[0.2em] uppercase mb-2"
+                style={{ color: "#a855f7" }}
+              >
+                GUIDES
+              </div>
+              <div
+                className="font-display font-black text-5xl sm:text-6xl leading-none mb-2"
+                style={{ color: "#a855f7" }}
+              >
+                {guideCount}
+              </div>
+              <div
+                className="text-xs tracking-wide"
+                style={{ color: "#505050" }}
+              >
+                In-depth reviews, mods &amp; tutorials
+              </div>
+            </div>
           </div>
         </motion.div>
       </section>
@@ -307,7 +464,7 @@ export default function Home() {
               className="font-display font-bold text-2xl sm:text-3xl"
               style={{ color: "#e0e0e0" }}
             >
-              Featured <span className="glow-cyan">Images</span>
+              Featured <span style={{ color: "#00f0ff" }}>Images</span>
             </h2>
           </div>
           {featuredImages.length > 1 && (
@@ -409,7 +566,6 @@ function ImageCard({
           ? "1px solid rgba(0,240,255,0.3)"
           : "1px solid rgba(255,255,255,0.1)",
       }}
-      data-ocid={`home.item.${index + 1}`}
     >
       <div className="relative overflow-hidden" style={{ aspectRatio: "3/4" }}>
         <img

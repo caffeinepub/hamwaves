@@ -144,7 +144,7 @@ export default function ChirpProgrammingGuide() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="font-display font-black text-3xl sm:text-5xl leading-tight mb-3 glow-cyan"
+            className="font-display font-black text-3xl sm:text-5xl leading-tight mb-3"
           >
             CHIRP Programming Guide for Quansheng UV-K5 2026: Beginner
             Step-by-Step Tutorial
@@ -966,7 +966,7 @@ export default function ChirpProgrammingGuide() {
 
           {/* Subscribe CTA */}
           <div className="text-center">
-            <h3 className="font-display font-black text-2xl sm:text-3xl glow-cyan mb-2">
+            <h3 className="font-display font-black text-2xl sm:text-3xl mb-2">
               Subscribe for More Guides!
             </h3>
             <p className="text-sm mb-6" style={{ color: "#606060" }}>

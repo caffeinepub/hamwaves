@@ -9,11 +9,13 @@ import { AnimatePresence } from "motion/react";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 import BestAntennasMods from "./pages/BestAntennasMods";
+import BestBudgetHandhelds2026 from "./pages/BestBudgetHandhelds2026";
 import ChirpProgrammingGuide from "./pages/ChirpProgrammingGuide";
 import EquipmentReviews from "./pages/EquipmentReviews";
 import Home from "./pages/Home";
 import Links from "./pages/Links";
 import QuanshengUVK5Review from "./pages/QuanshengUVK5Review";
+import SatelliteScanningAntennas from "./pages/SatelliteScanningAntennas";
 import Videos from "./pages/Videos";
 
 const rootRoute = createRootRoute({
@@ -72,6 +74,18 @@ const bestAntennasModsRoute = createRoute({
   component: BestAntennasMods,
 });
 
+const bestBudgetHandheldsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/equipment-reviews/best-budget-handhelds-2026",
+  component: BestBudgetHandhelds2026,
+});
+
+const satelliteScanningAntennasRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/equipment-reviews/satellite-scanning-antennas",
+  component: SatelliteScanningAntennas,
+});
+
 const routeTree = rootRoute.addChildren([
   homeRoute,
   videosRoute,
@@ -80,6 +94,8 @@ const routeTree = rootRoute.addChildren([
   quanshengReviewRoute,
   chirpGuideRoute,
   bestAntennasModsRoute,
+  bestBudgetHandheldsRoute,
+  satelliteScanningAntennasRoute,
 ]);
 
 const router = createRouter({ routeTree });

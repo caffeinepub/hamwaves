@@ -22,6 +22,19 @@ const activeCards = [
       "Nagoya NA-771, tactical foldable options, and hardware mods for better RX gain, noise reduction, and SOTA/portable use. Real improvements & buying tips.",
     href: "/equipment-reviews/best-antennas-mods-uv-k5",
   },
+  {
+    title: "Best Budget Handhelds 2026 Compared",
+    excerpt:
+      "UV-K5 vs UV-K6 vs UV-K1 vs Baofeng UV-5R – which sub-$50 radio wins for RX scanning beginners? Honest 2026 comparison with firmware, battery, and value breakdown.",
+    href: "/equipment-reviews/best-budget-handhelds-2026",
+  },
+  {
+    title:
+      "Satellite & Scanning: Best Antennas for Receiving Ham Radio Satellites 2026",
+    excerpt:
+      "Yagi, tactical & portable antennas for FM birds, ISS packet, weather sats & space signals. RX-only beginner guide – Arrow II, DIY tape measure, tactical foldable & more.",
+    href: "/equipment-reviews/satellite-scanning-antennas",
+  },
 ];
 
 const comingCards = [
@@ -29,11 +42,6 @@ const comingCards = [
     title: "Quansheng UV-K6 SSB Mod Guide",
     excerpt:
       "How to add the HF board to your UV-K6 and unlock full SSB/CW capability.",
-  },
-  {
-    title: "Best Budget Handhelds 2026 Compared",
-    excerpt:
-      "UV-K5 vs Baofeng vs Radioddity — which sub-$50 radio gives you the most?",
   },
 ];
 
@@ -76,7 +84,7 @@ export default function EquipmentReviews() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.15 }}
-            className="font-display font-black text-3xl sm:text-5xl lg:text-6xl leading-tight mb-4 glow-cyan"
+            className="font-display font-black text-3xl sm:text-5xl lg:text-6xl leading-tight mb-4"
           >
             Equipment Reviews &amp; Guides
           </motion.h1>
@@ -136,7 +144,7 @@ export default function EquipmentReviews() {
                 <Radio size={40} style={{ color: "#00f0ff", opacity: 0.5 }} />
               </div>
               <div className="p-5 flex flex-col flex-1">
-                <h3 className="font-display font-bold text-base glow-cyan leading-snug mb-2">
+                <h3 className="font-display font-bold text-base leading-snug mb-2">
                   {card.title}
                 </h3>
                 <p

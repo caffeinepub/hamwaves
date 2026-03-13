@@ -58,12 +58,12 @@ export default function BestAntennasMods() {
               "radial-gradient(ellipse 80% 60% at 50% 70%, rgba(0,240,255,0.06) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 50% 90%, rgba(168,85,247,0.08) 0%, transparent 60%)",
           }}
         />
-        <div className="relative z-10 flex flex-col items-center text-center px-4 max-w-3xl">
+        <div className="relative z-10 flex flex-col items-center text-center px-4 max-w-3xl pt-24">
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="font-display font-black text-3xl sm:text-5xl leading-tight mb-3 glow-cyan"
+            className="font-display font-black text-3xl sm:text-5xl leading-tight mb-3"
           >
             Best Antennas &amp; Mods for Quansheng UV-K5 2026: Upgrade Your
             Signal
@@ -830,7 +830,7 @@ export default function BestAntennasMods() {
 
           {/* Subscribe CTA */}
           <div className="text-center">
-            <h3 className="font-display font-black text-2xl sm:text-3xl glow-cyan mb-2">
+            <h3 className="font-display font-black text-2xl sm:text-3xl mb-2">
               Subscribe to HamWaves for more gear upgrades!
             </h3>
             <p className="text-sm mb-6" style={{ color: "#606060" }}>

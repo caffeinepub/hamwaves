@@ -3,12 +3,14 @@ import {
   ArrowRight,
   BookOpen,
   ExternalLink,
-  Instagram,
+  Globe,
   Link2,
   List,
+  Map as MapIcon,
   Radio,
+  Satellite,
   ShoppingBag,
-  Twitter,
+  Signal,
   Youtube,
 } from "lucide-react";
 import { motion } from "motion/react";
@@ -26,6 +28,9 @@ const sections: {
   heading: string;
   icon: React.ElementType;
   links: LinkItem[];
+  subtitle?: string;
+  bottomNote?: string;
+  gridClass?: string;
 }[] = [
   {
     heading: "Main Channel",
@@ -33,10 +38,77 @@ const sections: {
     links: [
       {
         icon: Youtube,
-        title: "HamWaves on YouTube",
-        desc: "Subscribe to the main channel for tutorials, equipment reviews, and live DX contacts.",
+        title: "YouTube",
+        desc: "Subscribe to main channel for airband, uhf military airband, satellite scanning live rx listening",
         href: "https://www.youtube.com/@dmtoozer",
         accentColor: "#00f0ff",
+      },
+    ],
+  },
+  {
+    heading: "Ham Radio Resources",
+    icon: Radio,
+    subtitle:
+      "Useful sites for beginners, RX scanning, repeaters, satellites, and more – USA, UK & Europe focus",
+    bottomNote:
+      "All RX listening is license-free worldwide – enjoy scanning airband, marine, NOAA, satellites, and more!",
+    gridClass: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
+    links: [
+      {
+        icon: BookOpen,
+        title: "RSGB",
+        desc: "UK amateur radio organization – licensing info, beginner guides, operating tips, events, and frequency allocations for beginners and scanners.",
+        href: "https://rsgb.org/",
+        accentColor: "#00f0ff",
+      },
+      {
+        icon: BookOpen,
+        title: "ARRL",
+        desc: "US national ham radio association – licensing resources, beginner guides, operating manuals, and events (great for USA visitors).",
+        href: "https://www.arrl.org/",
+        accentColor: "#a855f7",
+      },
+      {
+        icon: MapIcon,
+        title: "RepeaterBook",
+        desc: "Worldwide repeater directory (USA, UK, Europe +70 countries) – search local repeaters, frequencies, offsets for scanning/listening; app available.",
+        href: "https://www.repeaterbook.com/",
+        accentColor: "#00f0ff",
+      },
+      {
+        icon: ExternalLink,
+        title: "QRZ.com",
+        desc: "Amateur radio callsign lookup, logbook, forums, and ham community (useful globally).",
+        href: "https://www.qrz.com/",
+        accentColor: "#a855f7",
+      },
+      {
+        icon: Link2,
+        title: "eHam.net",
+        desc: "Equipment reviews, elmer/mentor forum, classifieds, and global ham community.",
+        href: "https://www.eham.net/",
+        accentColor: "#00f0ff",
+      },
+      {
+        icon: Satellite,
+        title: "AMSAT",
+        desc: "Satellite resources – active ham satellite frequencies, tracking, status for RX listening (FM birds, ISS packet/APRS); great for scanning space signals.",
+        href: "https://www.amsat.org/",
+        accentColor: "#a855f7",
+      },
+      {
+        icon: Globe,
+        title: "N2YO Satellite Tracker",
+        desc: "Live satellite tracking, passes, frequencies – monitor amateur radio satellites and ISS without transmitting (RX-only tool).",
+        href: "https://www.n2yo.com/",
+        accentColor: "#00f0ff",
+      },
+      {
+        icon: Signal,
+        title: "RadioReference.com",
+        desc: "Frequency databases and forums – USA/UK/EU scanning resources, airband, marine, NOAA, public safety frequencies (RX listening guides).",
+        href: "https://www.radioreference.com/",
+        accentColor: "#a855f7",
       },
     ],
   },
@@ -64,60 +136,6 @@ const sections: {
         desc: "SOTA activations, park operations, and portable setups.",
         href: "https://www.youtube.com/@dmtoozer",
         accentColor: "#00f0ff",
-      },
-    ],
-  },
-  {
-    heading: "Socials",
-    icon: Link2,
-    links: [
-      {
-        icon: Instagram,
-        title: "Instagram",
-        desc: "Behind-the-scenes gear shots, antenna builds, and shack updates.",
-        href: "https://instagram.com/",
-        accentColor: "#a855f7",
-      },
-      {
-        icon: Twitter,
-        title: "Twitter / X",
-        desc: "Real-time updates, DX spots, and band condition reports.",
-        href: "https://x.com/",
-        accentColor: "#00f0ff",
-      },
-    ],
-  },
-  {
-    heading: "Ham Radio Resources",
-    icon: Radio,
-    links: [
-      {
-        icon: BookOpen,
-        title: "ARRL",
-        desc: "The American Radio Relay League – licensing info, operating guides, and events.",
-        href: "https://www.arrl.org",
-        accentColor: "#00f0ff",
-      },
-      {
-        icon: ExternalLink,
-        title: "QRZ.com",
-        desc: "Amateur radio callsign lookup, logbook, and forums.",
-        href: "https://www.qrz.com",
-        accentColor: "#a855f7",
-      },
-      {
-        icon: Link2,
-        title: "eHam.net",
-        desc: "Equipment reviews, elmer forum, and ham radio community.",
-        href: "https://www.eham.net",
-        accentColor: "#00f0ff",
-      },
-      {
-        icon: Radio,
-        title: "DXWatch",
-        desc: "Real-time DX cluster – spots, alerts, and propagation data.",
-        href: "https://www.dxwatch.com",
-        accentColor: "#a855f7",
       },
     ],
   },
@@ -159,7 +177,7 @@ export default function Links() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.35 }}
-      className="max-w-4xl mx-auto px-4 pt-28 pb-24"
+      className="max-w-6xl mx-auto px-4 pt-28 pb-24"
       data-ocid="links.page"
     >
       {/* Header */}
@@ -171,7 +189,7 @@ export default function Links() {
       >
         <h1 className="font-display font-black text-4xl sm:text-5xl mb-2">
           <span style={{ color: "#e0e0e0" }}>Useful </span>
-          <span className="glow-cyan">Links</span>
+          <span style={{ color: "#00f0ff" }}>Links</span>
         </h1>
         <p className="text-base" style={{ color: "#606060" }}>
           Everything HamWaves – channels, resources, gear, and socials.
@@ -181,6 +199,7 @@ export default function Links() {
       <div className="flex flex-col gap-12">
         {sections.map((section, si) => {
           const SIcon = section.icon;
+          const gridClass = section.gridClass ?? "grid-cols-1 sm:grid-cols-2";
           return (
             <motion.div
               key={section.heading}
@@ -189,7 +208,7 @@ export default function Links() {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: si * 0.08 }}
             >
-              <div className="flex items-center gap-3 mb-5">
+              <div className="flex items-center gap-3 mb-2">
                 <SIcon size={18} style={{ color: "#00f0ff" }} />
                 <h2
                   className="font-display font-bold text-xl"
@@ -206,7 +225,15 @@ export default function Links() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {section.subtitle && (
+                <p className="text-xs mb-5" style={{ color: "#606060" }}>
+                  {section.subtitle}
+                </p>
+              )}
+
+              {!section.subtitle && <div className="mb-5" />}
+
+              <div className={`grid gap-3 ${gridClass}`}>
                 {section.links.map((link, li) => {
                   const LIcon = link.icon;
                   const accent = link.accentColor ?? "#00f0ff";
@@ -289,6 +316,15 @@ export default function Links() {
                   );
                 })}
               </div>
+
+              {section.bottomNote && (
+                <p
+                  className="mt-4 text-xs italic"
+                  style={{ color: "rgba(0,240,255,0.7)" }}
+                >
+                  {section.bottomNote}
+                </p>
+              )}
             </motion.div>
           );
         })}

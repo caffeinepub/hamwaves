@@ -112,7 +112,7 @@ export default function QuanshengUVK5Review() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="font-display font-black text-3xl sm:text-5xl leading-tight mb-3 glow-cyan"
+            className="font-display font-black text-3xl sm:text-5xl leading-tight mb-3"
           >
             Quansheng UV-K5 Review 2026
           </motion.h1>
@@ -232,7 +232,7 @@ export default function QuanshengUVK5Review() {
                   >
                     {spec.label}
                   </span>
-                  <span className="font-display font-bold text-sm glow-cyan">
+                  <span className="font-display font-bold text-sm">
                     {spec.value}
                   </span>
                 </div>
@@ -586,9 +586,7 @@ export default function QuanshengUVK5Review() {
                   Verdict
                 </h2>
               </div>
-              <span className="font-display font-black text-3xl glow-cyan">
-                9/10
-              </span>
+              <span className="font-display font-black text-3xl">9/10</span>
             </div>
             <p
               className="text-base leading-relaxed"
@@ -614,7 +612,7 @@ export default function QuanshengUVK5Review() {
           transition={{ duration: 0.5 }}
           className="mt-14 text-center"
         >
-          <h2 className="font-display font-black text-2xl sm:text-3xl glow-cyan mb-2">
+          <h2 className="font-display font-black text-2xl sm:text-3xl mb-2">
             Watch My UV-K5(8) Hands-On Tests
           </h2>
           <p className="text-sm mb-6" style={{ color: "#606060" }}>

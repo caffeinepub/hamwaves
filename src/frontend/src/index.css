@@ -99,15 +99,12 @@ body {
   border-radius: 1rem;
 }
 
-/* Neon glow utilities */
+/* Neon color utilities – no text-shadow glow on headers */
 .glow-cyan {
-  text-shadow: 0 0 10px rgba(0, 240, 255, 0.8), 0 0 30px rgba(0, 240, 255, 0.4);
   color: #00f0ff;
 }
 
 .glow-purple {
-  text-shadow: 0 0 10px rgba(168, 85, 247, 0.8), 0 0 30px
-    rgba(168, 85, 247, 0.4);
   color: #a855f7;
 }
 
@@ -209,7 +206,6 @@ body {
 /* Nav active state */
 .nav-active {
   color: #00f0ff;
-  text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
 }
 
 /* Heading font */

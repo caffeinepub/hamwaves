@@ -1,53 +1,7 @@
 import { Filter } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
-
-const allVideos = [
-  {
-    id: "x16FwkSTi3U",
-    title: "real military ATC chatter caught on budget scanner",
-  },
-  {
-    id: "0pyDkCAbbv8",
-    title: "Mini Kong pulls in pilot communications instantly",
-  },
-  {
-    id: "LOQ2r-YTY9o",
-    title: "catching real ATC chatter on the cheapest radio possible",
-  },
-  {
-    id: "f1A77KM8QFk",
-    title: "listening to pilots on the quansheng uvk1",
-  },
-  {
-    id: "V2qggdK5hyU",
-    title: "Walkie Talkie Games Hit Different",
-  },
-  {
-    id: "2Vg5Qvr6uEY",
-    title: "Budget handheld beats expensive radios for ISS reception",
-  },
-  {
-    id: "uqvBpZlFNH8",
-    title: "ISS broadcasting directly into my radio",
-  },
-  {
-    id: "vJu--Y2fG54",
-    title: "This UV-K5 AM fix is insane",
-  },
-  {
-    id: "mOg_0YW2HRI",
-    title: "pilots hate knowing this $20 radio works",
-  },
-  {
-    id: "eCbmom_0Y5I",
-    title: "This $20 Radio Picks Up Satellite",
-  },
-  {
-    id: "Eh4c4lPUea8",
-    title: "This Radio Connects to the Space Station",
-  },
-];
+import { allVideos } from "../data/siteData";
 
 export default function Videos() {
   const [filter, setFilter] = useState<"all" | "short">("short");
@@ -92,19 +46,11 @@ export default function Videos() {
           className="mb-10"
         >
           <h1 className="font-display font-black text-4xl sm:text-6xl mb-3 tracking-tight">
-            <span
-              style={{
-                color: "#00f0ff",
-                textShadow:
-                  "0 0 20px rgba(0,240,255,0.6), 0 0 40px rgba(0,240,255,0.3)",
-              }}
-            >
-              HamWaves
-            </span>{" "}
+            <span style={{ color: "#00f0ff" }}>HamWaves</span>{" "}
             <span style={{ color: "#e0e0e0" }}>Shorts</span>
           </h1>
           <p className="text-base" style={{ color: "#606060" }}>
-            All 11 Shorts — straight from the HamWaves channel.
+            All {allVideos.length} Shorts — straight from the HamWaves channel.
           </p>
         </motion.div>
 
