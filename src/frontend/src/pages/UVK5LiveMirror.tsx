@@ -1,1553 +1,1383 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+declare global {
+  interface Navigator {
+    serial: {
+      requestPort(options?: object): Promise<SerialPort>;
+    };
+  }
+  interface SerialPort {
+    open(options: { baudRate: number }): Promise<void>;
+    close(): Promise<void>;
+    readable: ReadableStream<Uint8Array>;
+    writable: WritableStream<Uint8Array>;
+  }
+}
+
 import { Link } from "@tanstack/react-router";
+import {
+  AlertTriangle,
+  Camera,
+  ChevronLeft,
+  ExternalLink,
+  Github,
+  Keyboard,
+  Minus,
+  Plus,
+  Radio,
+  RefreshCw,
+  Usb,
+  Wifi,
+  WifiOff,
+  ZapOff,
+} from "lucide-react";
 import { motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-type ConnectionStatus =
-  | "idle"
+// ── Types ─────────────────────────────────────────────────────────────────────
+type Status =
+  | "ready"
   | "connecting"
   | "connected"
+  | "sending"
+  | "connection_lost"
   | "reconnecting"
-  | "error"
-  | "disconnected";
-type ColorTheme = "blue" | "orange" | "white" | "grey" | "invert";
-type RadioModel = "uvk5" | "uvk1v3";
-type Language = "en" | "fr";
+  | "error";
+type ThemeName = "Grey" | "Orange" | "Blue" | "White" | "Invert";
+type ModelName = "UV-K5" | "UV-K1 V3";
+type Lang = "en" | "fr";
 
-const THEME_COLORS: Record<
-  Exclude<ColorTheme, "invert">,
-  { fg: string; bg: string }
+interface ThemeColors {
+  fg: string;
+  bg: string;
+  glow: boolean;
+  gradient?: [string, string]; // [top, bottom] for LCD gradient
+}
+
+const THEMES: Record<ThemeName, ThemeColors> = {
+  Grey: { fg: "#000000", bg: "#9aabb8", glow: false },
+  Orange: { fg: "#000000", bg: "#ff8800", glow: false },
+  Blue: {
+    fg: "#000000",
+    bg: "#001a3d",
+    glow: true,
+    gradient: ["#001133", "#003366"],
+  },
+  White: { fg: "#000000", bg: "#ffffff", glow: false },
+  Invert: { fg: "#00f0ff", bg: "#000000", glow: false },
+};
+
+// F4HWN Fusion v5.2.0 key codes (approximate from K5Viewer source)
+const KEY_CODES: Record<string, number> = {
+  PTT: 0x01,
+  MENU: 0x02,
+  UP: 0x03,
+  DOWN: 0x04,
+  LEFT: 0x05,
+  RIGHT: 0x06,
+  EXIT: 0x07,
+  F1: 0x08,
+  F2: 0x09,
+  "0": 0x0a,
+  "1": 0x0b,
+  "2": 0x0c,
+  "3": 0x0d,
+  "4": 0x0e,
+  "5": 0x0f,
+  "6": 0x10,
+  "7": 0x11,
+  "8": 0x12,
+  "9": 0x13,
+  "*": 0x14,
+  "#": 0x15,
+  "A/B": 0x16,
+  CALL: 0x17,
+};
+
+const KEY_LABELS_EN: Record<string, string> = {
+  PTT: "PTT",
+  MENU: "MENU",
+  EXIT: "EXIT",
+  UP: "▲",
+  DOWN: "▼",
+  LEFT: "◄",
+  RIGHT: "►",
+  F1: "F1",
+  F2: "F2",
+  "A/B": "A/B",
+  CALL: "CALL",
+};
+
+const KEY_LABELS_FR: Record<string, string> = {
+  PTT: "PTT",
+  MENU: "MENU",
+  EXIT: "RET",
+  UP: "▲",
+  DOWN: "▼",
+  LEFT: "◄",
+  RIGHT: "►",
+  F1: "F1",
+  F2: "F2",
+  "A/B": "A/B",
+  CALL: "APPEL",
+};
+
+const KEYPAD_ROWS = [
+  [{ id: "PTT", span: 3 }],
+  [{ id: "F1" }, { id: "UP" }, { id: "F2" }],
+  [{ id: "LEFT" }, { id: "MENU" }, { id: "RIGHT" }],
+  [{ id: "A/B" }, { id: "DOWN" }, { id: "EXIT" }],
+  [{ id: "1" }, { id: "2" }, { id: "3" }],
+  [{ id: "4" }, { id: "5" }, { id: "6" }],
+  [{ id: "7" }, { id: "8" }, { id: "9" }],
+  [{ id: "*" }, { id: "0" }, { id: "#" }],
+] as Array<Array<{ id: string; span?: number }>>;
+
+const STATUS_CONFIG: Record<
+  Status,
+  { label: string; color: string; frLabel: string }
 > = {
-  blue: { fg: "#7ec8e3", bg: "#0d1b2a" },
-  orange: { fg: "#ff8c00", bg: "#0a0300" },
-  white: { fg: "#e8e8e8", bg: "#0a0a0a" },
-  grey: { fg: "#aaaaaa", bg: "#050505" },
-};
-
-const LABELS = {
-  en: {
-    connect: "▶ Connect",
-    disconnect: "■ Disconnect",
-    keypad: "⌨ Keypad",
-    help: "? Help",
-    screenshot: "📷 Save PNG",
-    theme: "Theme",
-    model: "Model",
-    zoom: "Zoom",
-    ready: "READY",
-    connecting: "Connecting…",
-    connected: "Connected · F4HWN",
-    reconnecting: "Reconnecting…",
-    error: "Error",
-    disconnected: "Disconnected",
-    noPort: "No port selected. Choose your UV-K5/UV-K1 serial port.",
-    permDenied: "Serial permission denied. Allow port access in browser.",
-    fwMismatch: "Incompatible firmware. Install F4HWN v4.x+.",
-    connLost: "Connection lost – retrying…",
-    helpTitle: "How to Use – UV-K5 & UV-K1 V3 Live Mirror",
-    uvk5Label: "UV-K5",
-    uvk1v3Label: "UV-K1 V3",
+  ready: { label: "F4HWN READY", color: "#888", frLabel: "F4HWN PRÊT" },
+  connecting: {
+    label: "Connecting...",
+    color: "#f0c040",
+    frLabel: "Connexion...",
   },
-  fr: {
-    connect: "▶ Connecter",
-    disconnect: "■ Déconnecter",
-    keypad: "⌨ Clavier",
-    help: "? Aide",
-    screenshot: "📷 Capture PNG",
-    theme: "Thème",
-    model: "Modèle",
-    zoom: "Zoom",
-    ready: "PRÊT",
-    connecting: "Connexion…",
-    connected: "Connecté · F4HWN",
-    reconnecting: "Reconnexion…",
-    error: "Erreur",
-    disconnected: "Déconnecté",
-    noPort: "Aucun port sélectionné. Choisissez votre port UV-K5/UV-K1.",
-    permDenied: "Permission refusée. Autorisez l'accès au port série.",
-    fwMismatch: "Firmware incompatible. Installez F4HWN v4.x+.",
-    connLost: "Connexion perdue – nouvelle tentative…",
-    helpTitle: "Mode d'emploi – UV-K5 & UV-K1 V3 Live Mirror",
-    uvk5Label: "UV-K5",
-    uvk1v3Label: "UV-K1 V3",
+  connected: {
+    label: "Connected – F4HWN v5.2.0",
+    color: "#00ff88",
+    frLabel: "Connecté – F4HWN v5.2.0",
+  },
+  sending: {
+    label: "Sending key...",
+    color: "#00f0ff",
+    frLabel: "Envoi touche...",
+  },
+  connection_lost: {
+    label: "Connection lost – retry?",
+    color: "#ff4444",
+    frLabel: "Connexion perdue – réessayer ?",
+  },
+  reconnecting: {
+    label: "Reconnecting...",
+    color: "#f0c040",
+    frLabel: "Reconnexion...",
+  },
+  error: {
+    label: "Incompatible firmware",
+    color: "#ff4444",
+    frLabel: "Firmware incompatible",
   },
 };
 
-// ─── Elite Viewer Component ───────────────────────────────────────────────────
-function EliteUVK5Viewer() {
+// ── KeypadBtn ─────────────────────────────────────────────────────────────────
+interface KeypadBtnProps {
+  keyId: string;
+  span?: number;
+  lang: Lang;
+  disabled: boolean;
+  onSendKey: (keyId: string, isLong: boolean) => void;
+}
+
+function KeypadBtn({ keyId, span, lang, disabled, onSendKey }: KeypadBtnProps) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longFiredRef = useRef(false);
+  const [pressed, setPressed] = useState(false);
+
+  const labels = lang === "fr" ? KEY_LABELS_FR : KEY_LABELS_EN;
+  const displayLabel = labels[keyId] ?? keyId;
+  const isPTT = keyId === "PTT";
+  const isNav = ["UP", "DOWN", "LEFT", "RIGHT"].includes(keyId);
+  const isAccent = ["MENU", "EXIT", "F1", "F2"].includes(keyId);
+  const isDigit = /^[0-9*#]$/.test(keyId);
+
+  const handlePointerDown = () => {
+    if (disabled) return;
+    setPressed(true);
+    longFiredRef.current = false;
+    timerRef.current = setTimeout(() => {
+      longFiredRef.current = true;
+      onSendKey(keyId, true);
+    }, 500);
+  };
+
+  const handlePointerUp = () => {
+    setPressed(false);
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    if (!longFiredRef.current && !disabled) {
+      onSendKey(keyId, false);
+    }
+  };
+
+  const handlePointerLeave = () => {
+    setPressed(false);
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  let baseStyle =
+    "select-none rounded-md border text-sm font-bold tracking-wider transition-all duration-150 cursor-pointer flex items-center justify-center ";
+
+  if (isPTT) {
+    baseStyle +=
+      "py-3 text-base border-orange-500/60 bg-orange-900/40 text-orange-300 hover:border-orange-400 hover:shadow-[0_0_12px_rgba(249,115,22,0.5)] ";
+  } else if (isAccent) {
+    baseStyle +=
+      "py-2 border-[#00f0ff44] bg-[#0a1628] text-[#00f0ff] hover:border-[#00f0ff] hover:shadow-[0_0_10px_#00f0ff55] ";
+  } else if (isNav) {
+    baseStyle +=
+      "py-2 border-[#a855f733] bg-[#0a0f1e] text-[#a855f7] hover:border-[#a855f7] hover:shadow-[0_0_10px_#a855f755] ";
+  } else if (isDigit) {
+    baseStyle +=
+      "py-2 border-[#ffffff18] bg-[#0d1117] text-[#aaa] hover:border-[#ffffff44] hover:text-white ";
+  } else {
+    baseStyle +=
+      "py-2 border-[#00f0ff33] bg-[#0a1628] text-[#00f0ff99] hover:border-[#00f0ff88] ";
+  }
+
+  if (pressed) baseStyle += "brightness-75 scale-95 ";
+  if (disabled) baseStyle += "opacity-40 cursor-not-allowed ";
+
+  return (
+    <button
+      type="button"
+      className={baseStyle}
+      style={span ? { gridColumn: `span ${span}` } : {}}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerLeave}
+      disabled={disabled}
+      aria-label={`Key ${keyId}`}
+    >
+      {displayLabel}
+    </button>
+  );
+}
+
+// ── Main Component ─────────────────────────────────────────────────────────────
+export default function UVK5LiveMirror() {
+  const [status, setStatus] = useState<Status>("ready");
+  const [theme, setTheme] = useState<ThemeName>("Blue");
+  const [model, setModel] = useState<ModelName>("UV-K5");
+  const [lang, setLang] = useState<Lang>("en");
+  const [scale, setScale] = useState(10);
+  const [showKeypad, setShowKeypad] = useState(true);
+  const [showHelp, setShowHelp] = useState(false);
+  const [fps, setFps] = useState(0);
+  const [reconnectCountdown, setReconnectCountdown] = useState(0);
+  const [errorMsg, setErrorMsg] = useState("");
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const scanlineCanvasRef = useRef<HTMLCanvasElement>(null);
+  const portRef = useRef<SerialPort | null>(null);
+  const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(
+    null,
+  );
+  const writerRef = useRef<WritableStreamDefaultWriter<Uint8Array> | null>(
+    null,
+  );
   const framebufferRef = useRef<Uint8Array>(new Uint8Array(1024));
-  const portRef = useRef<any>(null);
-  const readerRef = useRef<any>(null);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const keepaliveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const reconnectAttemptsRef = useRef(0);
   const frameCountRef = useRef(0);
-  const lastFpsTimeRef = useRef(performance.now());
-  const firmwareVersionRef = useRef("");
+  const fpsTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const readingRef = useRef(false);
+  const statusRef = useRef<Status>("ready");
 
-  const [status, setStatus] = useState<ConnectionStatus>("idle");
-  const [errorMsg, setErrorMsg] = useState("");
-  const [fps, setFps] = useState(0);
-  const [pixelScale, setPixelScale] = useState(10);
-  const [colorTheme, setColorTheme] = useState<ColorTheme>("blue");
-  const [radioModel, setRadioModel] = useState<RadioModel>("uvk5");
-  const [language, setLanguage] = useState<Language>("en");
-  const [showKeypad, setShowKeypad] = useState(false);
-  const [framebuffer, setFramebuffer] = useState<Uint8Array>(
-    new Uint8Array(1024),
-  );
-  const [firmwareVer, setFirmwareVer] = useState("");
+  const W = 128;
+  const H = 64;
+  const BAUD = 38400;
 
-  const L = LABELS[language];
-  const isConnected = status === "connected";
-  const maxReconnectAttempts = 5;
+  // Keep statusRef in sync so async callbacks can read latest value
+  const setStatusSafe = useCallback((s: Status) => {
+    statusRef.current = s;
+    setStatus(s);
+  }, []);
 
-  // Keep framebuffer ref in sync
-  useEffect(() => {
-    framebufferRef.current = framebuffer;
-  }, [framebuffer]);
-
-  // ── Canvas render ──────────────────────────────────────────────────────────
-  useEffect(() => {
+  // ── Render Frame ──────────────────────────────────────────────────────────
+  const renderFrame = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const W = 128 * pixelScale;
-    const H = 64 * pixelScale;
-    canvas.width = W;
-    canvas.height = H;
+    const t = THEMES[theme];
+    const pw = scale;
+    const cw = W * pw;
+    const ch = H * pw;
 
-    // Resolve theme colors
-    let fgColor: string;
-    let bgColor: string;
-    if (colorTheme === "invert") {
-      fgColor = THEME_COLORS.blue.bg;
-      bgColor = THEME_COLORS.blue.fg;
+    // Background: gradient for Blue theme, flat otherwise
+    if (t.gradient) {
+      const grad = ctx.createLinearGradient(0, 0, 0, ch);
+      grad.addColorStop(0, t.gradient[0]);
+      grad.addColorStop(1, t.gradient[1]);
+      ctx.fillStyle = grad;
     } else {
-      fgColor = THEME_COLORS[colorTheme].fg;
-      bgColor = THEME_COLORS[colorTheme].bg;
+      ctx.fillStyle = t.bg;
+    }
+    ctx.fillRect(0, 0, cw, ch);
+
+    // Pixels
+    ctx.fillStyle = t.fg;
+    const fb = framebufferRef.current;
+    for (let byteIdx = 0; byteIdx < 1024; byteIdx++) {
+      const byte = fb[byteIdx];
+      if (byte === 0) continue;
+      const pixelBase = byteIdx * 8;
+      for (let bit = 0; bit < 8; bit++) {
+        if (byte & (0x80 >> bit)) {
+          const px = (pixelBase + bit) % W;
+          const py = Math.floor((pixelBase + bit) / W);
+          ctx.fillRect(px * pw, py * pw, pw - 1, pw - 1);
+        }
+      }
     }
 
-    // Fill background
-    ctx.fillStyle = bgColor;
-    ctx.fillRect(0, 0, W, H);
+    frameCountRef.current++;
+  }, [theme, scale]);
 
-    if (isConnected) {
-      // Draw live framebuffer pixels
-      const fb = framebuffer;
-      ctx.fillStyle = fgColor;
-      for (let byteIdx = 0; byteIdx < 1024; byteIdx++) {
-        const byte = fb[byteIdx];
-        if (byte === 0) continue;
-        for (let bit = 0; bit < 8; bit++) {
-          if (byte & (0x80 >> bit)) {
-            const pixelIdx = byteIdx * 8 + bit;
-            const px = pixelIdx % 128;
-            const py = Math.floor(pixelIdx / 128);
-            if (py < 64) {
-              ctx.fillRect(
-                px * pixelScale,
-                py * pixelScale,
-                pixelScale,
-                pixelScale,
-              );
-            }
-          }
-        }
-      }
-    } else {
-      // Placeholder display
-      const modelLabel = radioModel === "uvk5" ? "UV-K5" : "UV-K1 V3";
-      ctx.fillStyle = fgColor;
-      ctx.font = `bold ${Math.max(12, pixelScale * 2)}px monospace`;
-      ctx.textAlign = "center";
-      ctx.fillText(modelLabel, W / 2, H / 2 - pixelScale * 4);
-      ctx.font = `${Math.max(8, pixelScale)}px monospace`;
-      ctx.fillText("F4HWN READY", W / 2, H / 2);
-      ctx.fillText("◄ 145.500 FM ►", W / 2, H / 2 + pixelScale * 2.5);
-    }
-
-    // Scanline overlay
-    ctx.fillStyle = fgColor;
-    ctx.globalAlpha = 0.06;
-    for (let y = 0; y < H; y += pixelScale * 2) {
-      ctx.fillRect(0, y, W, pixelScale * 0.5);
-    }
-    ctx.globalAlpha = 1.0;
-  }, [framebuffer, colorTheme, pixelScale, isConnected, radioModel]);
-
-  // ── Framebuffer parser + read loop ────────────────────────────────────────
-  const readLoop = useCallback(async (port: any) => {
-    const reader = port.readable.getReader();
-    readerRef.current = reader;
-    const buf = new Uint8Array(16 * 1024);
-    let bufLen = 0;
-
-    try {
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        // Manage circular buffer
-        if (bufLen + value.length > buf.length) {
-          const keep = Math.min(bufLen, 4096);
-          buf.copyWithin(0, bufLen - keep);
-          bufLen = keep;
-        }
-        buf.set(value, bufLen);
-        bufLen += value.length;
-
-        let i = 0;
-        while (i < bufLen - 4) {
-          // Scan for AA55 header
-          if (buf[i] !== 0xaa || buf[i + 1] !== 0x55) {
-            i++;
-            continue;
-          }
-          const type = buf[i + 2];
-          const size = (buf[i + 3] << 8) | buf[i + 4];
-          const dataStart = i + 5;
-
-          if (type === 0x01) {
-            // Full frame: 1024 bytes
-            if (bufLen - dataStart < 1024) break;
-            const newFb = new Uint8Array(1024);
-            newFb.set(buf.subarray(dataStart, dataStart + 1024));
-            framebufferRef.current = newFb;
-            setFramebuffer(newFb);
-            i = dataStart + 1024;
-          } else if (type === 0x02) {
-            // Diff blocks: each block = 1 index byte + 8 data bytes
-            if (bufLen - dataStart < size) break;
-            const blocks = Math.floor(size / 9);
-            const fb = framebufferRef.current.slice();
-            for (let b = 0; b < blocks; b++) {
-              const idx = buf[dataStart + b * 9];
-              for (let d = 0; d < 8; d++) {
-                const pos = idx * 8 + d;
-                if (pos < 1024) {
-                  fb[pos] = buf[dataStart + b * 9 + 1 + d];
-                }
-              }
-            }
-            framebufferRef.current = fb;
-            setFramebuffer(fb);
-            i = dataStart + size;
-          } else if (type === 0x03) {
-            // Firmware info string (null-terminated)
-            if (bufLen - dataStart < size) break;
-            const strBytes = buf.subarray(dataStart, dataStart + size);
-            const nullIdx = strBytes.indexOf(0);
-            const verStr = new TextDecoder().decode(
-              strBytes.subarray(0, nullIdx >= 0 ? nullIdx : size),
-            );
-            firmwareVersionRef.current = verStr;
-            setFirmwareVer(verStr);
-            i = dataStart + size;
-          } else {
-            i++;
-            continue;
-          }
-
-          // Update FPS
-          frameCountRef.current++;
-          const now = performance.now();
-          if (now - lastFpsTimeRef.current >= 1000) {
-            setFps(frameCountRef.current);
-            frameCountRef.current = 0;
-            lastFpsTimeRef.current = now;
-          }
-        }
-
-        if (i > 0) {
-          buf.copyWithin(0, i);
-          bufLen -= i;
-        }
-      }
-    } catch (e: any) {
-      // Handle connection loss with auto-reconnect
-      if (reconnectAttemptsRef.current < maxReconnectAttempts) {
-        setStatus("reconnecting");
-        setErrorMsg(
-          `Connection lost – retrying… (${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts})`,
-        );
-        reconnectAttemptsRef.current++;
-        setTimeout(() => connectToRadio(true), 3000);
-      } else {
-        setErrorMsg(`Connection lost – ${e?.message ?? "Unknown error"}`);
-        setStatus("error");
-      }
-    } finally {
-      try {
-        reader.releaseLock();
-      } catch (_) {
-        /* ignore */
-      }
-      readerRef.current = null;
-    }
-  }, []);
-
-  // ── Connect ────────────────────────────────────────────────────────────────
-  const connectToRadio = useCallback(
-    async (autoReconnect = false) => {
-      if (!("serial" in navigator)) {
-        setErrorMsg("Web Serial API not supported. Use Chrome or Edge.");
-        setStatus("error");
-        return;
-      }
-      if (!autoReconnect) {
-        reconnectAttemptsRef.current = 0;
-      }
-      setStatus("connecting");
-      setErrorMsg("");
-      try {
-        let port: any;
-        if (autoReconnect && portRef.current) {
-          port = portRef.current;
-        } else {
-          port = await (navigator as any).serial.requestPort();
-          portRef.current = port;
-        }
-        if (!port.readable) {
-          await port.open({ baudRate: 115200 });
-        }
-        setStatus("connected");
-        reconnectAttemptsRef.current = 0;
-        frameCountRef.current = 0;
-        lastFpsTimeRef.current = performance.now();
-        readLoop(port);
-      } catch (e: any) {
-        if (
-          e.name === "NotFoundError" ||
-          e.message?.includes("No port selected")
-        ) {
-          setErrorMsg(L.noPort);
-        } else if (e.name === "NotAllowedError") {
-          setErrorMsg(L.permDenied);
-        } else if (
-          e.message?.includes("firmware") ||
-          e.message?.includes("not compatible")
-        ) {
-          setErrorMsg(L.fwMismatch);
-        } else {
-          setErrorMsg(`Connection failed: ${e?.message ?? "Unknown error"}`);
-        }
-        setStatus("error");
-      }
-    },
-    [readLoop, L],
-  );
-
-  // ── Disconnect ─────────────────────────────────────────────────────────────
-  const disconnect = useCallback(async () => {
-    reconnectAttemptsRef.current = maxReconnectAttempts; // prevent auto-reconnect
-    try {
-      if (readerRef.current) {
-        await readerRef.current.cancel();
-      }
-    } catch (_) {
-      /* ignore */
-    }
-    try {
-      if (portRef.current) {
-        await portRef.current.close();
-        portRef.current = null;
-      }
-    } catch (_) {
-      /* ignore */
-    }
-    setStatus("disconnected");
-    setFps(0);
-    setFirmwareVer("");
-  }, []);
-
-  // Cleanup on unmount
+  // ── Draw Scanlines (opacity 0.08) ─────────────────────────────────────────
   useEffect(() => {
+    const canvas = scanlineCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, W * scale, H * scale);
+    for (let row = 0; row < H; row++) {
+      if (row % 2 === 1) {
+        ctx.fillStyle = "rgba(0,0,0,0.08)";
+        ctx.fillRect(0, row * scale, W * scale, scale);
+      }
+    }
+  }, [scale]);
+
+  // ── FPS Counter ───────────────────────────────────────────────────────────
+  useEffect(() => {
+    fpsTimerRef.current = setInterval(() => {
+      setFps(frameCountRef.current);
+      frameCountRef.current = 0;
+    }, 1000);
     return () => {
-      reconnectAttemptsRef.current = maxReconnectAttempts;
-      if (readerRef.current) readerRef.current.cancel().catch(() => {});
-      if (portRef.current) portRef.current.close().catch(() => {});
+      if (fpsTimerRef.current) clearInterval(fpsTimerRef.current);
     };
   }, []);
 
-  // ── Screenshot ─────────────────────────────────────────────────────────────
-  const takeScreenshot = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const url = canvas.toDataURL("image/png");
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `uv-k5-mirror-${Date.now()}.png`;
-    a.click();
+  // Re-render on theme/scale change
+  useEffect(() => {
+    renderFrame();
+  }, [renderFrame]);
+
+  // ── Keepalive ─────────────────────────────────────────────────────────────
+  const startKeepalive = useCallback(() => {
+    if (keepaliveTimerRef.current) clearInterval(keepaliveTimerRef.current);
+    keepaliveTimerRef.current = setInterval(async () => {
+      if (writerRef.current && statusRef.current === "connected") {
+        try {
+          // F4HWN keepalive: 55 AA 00 00
+          await writerRef.current.write(
+            new Uint8Array([0x55, 0xaa, 0x00, 0x00]),
+          );
+        } catch {
+          // ignore keepalive write errors
+        }
+      }
+    }, 1000);
   }, []);
 
-  // ── Status display ─────────────────────────────────────────────────────────
-  const statusInfo: Record<
-    ConnectionStatus,
-    { color: string; label: string; dotAnim?: boolean }
-  > = {
-    idle: { color: "#666", label: L.ready },
-    connecting: { color: "#f59e0b", label: L.connecting, dotAnim: true },
-    connected: {
-      color: "#22c55e",
-      label: firmwareVer ? `${L.connected} v${firmwareVer}` : L.connected,
-      dotAnim: true,
+  const stopKeepalive = useCallback(() => {
+    if (keepaliveTimerRef.current) {
+      clearInterval(keepaliveTimerRef.current);
+      keepaliveTimerRef.current = null;
+    }
+  }, []);
+
+  // ── Serial Read Loop ──────────────────────────────────────────────────────
+  const readLoop = useCallback(async () => {
+    const reader = readerRef.current;
+    if (!reader) return;
+    readingRef.current = true;
+
+    const buffer: number[] = [];
+
+    const readBytes = async (n: number): Promise<Uint8Array> => {
+      const out = new Uint8Array(n);
+      let filled = 0;
+      while (filled < n) {
+        while (buffer.length === 0) {
+          const { value, done } = await reader.read();
+          if (done) throw new Error("Stream closed");
+          if (value) for (const b of value) buffer.push(b);
+        }
+        out[filled++] = buffer.shift()!;
+      }
+      return out;
+    };
+
+    try {
+      while (readingRef.current) {
+        // Sync to AA 55 header
+        let b0 = 0;
+        while (true) {
+          const [b] = await readBytes(1);
+          if (b0 === 0xaa && b === 0x55) break;
+          b0 = b;
+        }
+
+        const [type] = await readBytes(1);
+        const sizeBytes = await readBytes(2);
+        const size = (sizeBytes[0] << 8) | sizeBytes[1];
+
+        if (type === 0x01) {
+          // Full 1024-byte framebuffer
+          const frameData = await readBytes(Math.min(size, 1024));
+          framebufferRef.current.set(frameData);
+          renderFrame();
+        } else if (type === 0x02) {
+          // Diff blocks: each block = 1-byte index + 8 bytes data
+          const blockCount = Math.floor(size / 9);
+          for (let i = 0; i < blockCount; i++) {
+            const [idx] = await readBytes(1);
+            const data = await readBytes(8);
+            framebufferRef.current.set(data, idx * 8);
+          }
+          renderFrame();
+        }
+        // Ignore unknown types gracefully
+      }
+    } catch {
+      if (readingRef.current) {
+        readingRef.current = false;
+        stopKeepalive();
+        setStatusSafe("connection_lost");
+        scheduleReconnect();
+      }
+    }
+  }, [renderFrame, stopKeepalive, setStatusSafe]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Reconnect ────────────────────────────────────────────────────────────
+  const scheduleReconnect = useCallback(() => {
+    if (reconnectAttemptsRef.current >= 5) {
+      setStatusSafe("error");
+      setErrorMsg("Max reconnect attempts reached. Check cable & firmware.");
+      return;
+    }
+    reconnectAttemptsRef.current++;
+    setStatusSafe("reconnecting");
+    let countdown = 3;
+    setReconnectCountdown(countdown);
+    const interval = setInterval(() => {
+      countdown--;
+      setReconnectCountdown(countdown);
+      if (countdown <= 0) clearInterval(interval);
+    }, 1000);
+    reconnectTimerRef.current = setTimeout(async () => {
+      try {
+        if (portRef.current) {
+          const reader = portRef.current.readable.getReader();
+          readerRef.current = reader;
+          const writer = portRef.current.writable.getWriter();
+          writerRef.current = writer;
+          setStatusSafe("connected");
+          startKeepalive();
+          readLoop();
+        } else {
+          scheduleReconnect();
+        }
+      } catch {
+        scheduleReconnect();
+      }
+    }, 3000);
+  }, [readLoop, startKeepalive, setStatusSafe]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Connect ───────────────────────────────────────────────────────────────
+  const connect = useCallback(async () => {
+    if (!("serial" in navigator)) {
+      setStatusSafe("error");
+      setErrorMsg(
+        "Web Serial not supported. Use Chrome or Edge browser over HTTPS.",
+      );
+      return;
+    }
+    setErrorMsg("");
+    try {
+      setStatusSafe("connecting");
+      const port = await navigator.serial.requestPort();
+      await port.open({ baudRate: BAUD });
+      portRef.current = port;
+
+      const writer = port.writable.getWriter();
+      writerRef.current = writer;
+
+      const reader = port.readable.getReader();
+      readerRef.current = reader;
+
+      reconnectAttemptsRef.current = 0;
+      setStatusSafe("connected");
+      startKeepalive();
+      readLoop();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.toLowerCase().includes("no port")) {
+        setErrorMsg("No port selected. Please choose a serial port.");
+      } else if (msg.toLowerCase().includes("permission")) {
+        setErrorMsg(
+          "Permission denied. Allow serial port access in browser settings.",
+        );
+      } else {
+        setErrorMsg(`Connection failed: ${msg}`);
+      }
+      setStatusSafe("ready");
+    }
+  }, [readLoop, startKeepalive, setStatusSafe]);
+
+  // ── Disconnect ────────────────────────────────────────────────────────────
+  const disconnect = useCallback(async () => {
+    readingRef.current = false;
+    stopKeepalive();
+    if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+    try {
+      readerRef.current?.cancel();
+      readerRef.current?.releaseLock();
+      readerRef.current = null;
+    } catch {}
+    try {
+      await writerRef.current?.close();
+      writerRef.current = null;
+    } catch {}
+    try {
+      await portRef.current?.close();
+      portRef.current = null;
+    } catch {}
+    setStatusSafe("ready");
+  }, [stopKeepalive, setStatusSafe]);
+
+  // ── Send Key ──────────────────────────────────────────────────────────────
+  const sendKey = useCallback(
+    async (keyId: string, isLong: boolean) => {
+      if (!writerRef.current || statusRef.current !== "connected") return;
+      const code = KEY_CODES[keyId];
+      if (code === undefined) return;
+      // F4HWN key packet: AA 55 [01=short|81=long] [keycode]
+      const typeB = isLong ? 0x81 : 0x01;
+      const packet = new Uint8Array([0xaa, 0x55, typeB, code]);
+      try {
+        setStatusSafe("sending");
+        await writerRef.current.write(packet);
+        setTimeout(() => {
+          if (statusRef.current === "sending") setStatusSafe("connected");
+        }, 400);
+      } catch {
+        setStatusSafe("connection_lost");
+        stopKeepalive();
+        scheduleReconnect();
+      }
     },
-    reconnecting: {
-      color: "#f59e0b",
-      label: `${L.reconnecting} (${reconnectAttemptsRef.current}/${maxReconnectAttempts})`,
-      dotAnim: true,
-    },
-    error: { color: "#ef4444", label: errorMsg || L.error },
-    disconnected: { color: "#555", label: L.disconnected },
+    [setStatusSafe, stopKeepalive, scheduleReconnect], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  // ── Screenshot ────────────────────────────────────────────────────────────
+  const takeScreenshot = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const link = document.createElement("a");
+    link.download = `uvk5-mirror-${model.replace(" ", "-")}-${Date.now()}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
   };
 
-  const si = statusInfo[status];
-  const W = 128 * pixelScale;
-  const H = 64 * pixelScale;
+  // ── Cleanup ───────────────────────────────────────────────────────────────
+  useEffect(() => {
+    return () => {
+      void disconnect();
+      if (fpsTimerRef.current) clearInterval(fpsTimerRef.current);
+    };
+  }, [disconnect]);
 
-  const keypadCells: { id: string; label: string }[] = [
-    { id: "kp-ptt", label: "PTT" },
-    { id: "kp-menu", label: "MENU" },
-    { id: "kp-exit", label: "EXIT" },
-    { id: "kp-r1c0", label: "" },
-    { id: "kp-up", label: "▲" },
-    { id: "kp-r1c2", label: "" },
-    { id: "kp-left", label: "◄" },
-    { id: "kp-down", label: "▼" },
-    { id: "kp-right", label: "►" },
-    { id: "kp-f1", label: "F1" },
-    { id: "kp-ab", label: "A/B" },
-    { id: "kp-f2", label: "F2" },
-    { id: "kp-1", label: "1" },
-    { id: "kp-2", label: "2" },
-    { id: "kp-3", label: "3" },
-    { id: "kp-4", label: "4" },
-    { id: "kp-5", label: "5" },
-    { id: "kp-6", label: "6" },
-    { id: "kp-7", label: "7" },
-    { id: "kp-8", label: "8" },
-    { id: "kp-9", label: "9" },
-    { id: "kp-star", label: "*" },
-    { id: "kp-0", label: "0" },
-    { id: "kp-hash", label: "#" },
-  ];
+  const isConnected = status === "connected" || status === "sending";
+  const canvasW = W * scale;
+  const canvasH = H * scale;
+  const sc = STATUS_CONFIG[status];
 
   return (
     <div
-      style={{
-        background: "#05080f",
-        border: "1px solid #00f0ff22",
-        borderRadius: 12,
-        overflow: "hidden",
-      }}
-    >
-      {/* ── Glass Control Bar ── */}
-      <div
-        style={{
-          background: "rgba(5,15,30,0.85)",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-          borderBottom: "1px solid #00f0ff22",
-          padding: "12px 20px",
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "center",
-          gap: 10,
-        }}
-      >
-        {/* Model selector */}
-        <div
-          style={{
-            display: "flex",
-            gap: 4,
-            background: "rgba(0,0,0,0.4)",
-            borderRadius: 8,
-            padding: 3,
-          }}
-        >
-          {(["uvk5", "uvk1v3"] as RadioModel[]).map((m) => (
-            <button
-              type="button"
-              key={m}
-              data-ocid={`uvk5mirror.model_${m}.radio`}
-              onClick={() => setRadioModel(m)}
-              style={{
-                padding: "5px 12px",
-                borderRadius: 5,
-                border: "none",
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: "pointer",
-                transition: "all 0.15s",
-                background: radioModel === m ? "#00f0ff" : "transparent",
-                color: radioModel === m ? "#0a0a0a" : "#888",
-                letterSpacing: "0.03em",
-              }}
-            >
-              {m === "uvk5" ? L.uvk5Label : L.uvk1v3Label}
-            </button>
-          ))}
-        </div>
-
-        <div
-          style={{ width: 1, height: 24, background: "#00f0ff22" }}
-          aria-hidden
-        />
-
-        {/* Connect / Disconnect */}
-        {!isConnected ? (
-          <button
-            type="button"
-            data-ocid="uvk5mirror.connect_button"
-            onClick={() => connectToRadio()}
-            disabled={status === "connecting" || status === "reconnecting"}
-            style={ctrlBtn(
-              "#00f0ff",
-              status === "connecting" || status === "reconnecting",
-            )}
-          >
-            {status === "connecting" || status === "reconnecting"
-              ? L.connecting
-              : L.connect}
-          </button>
-        ) : (
-          <button
-            type="button"
-            data-ocid="uvk5mirror.disconnect_button"
-            onClick={disconnect}
-            style={ctrlBtn("#ef4444")}
-          >
-            {L.disconnect}
-          </button>
-        )}
-
-        {/* Keypad toggle */}
-        <button
-          type="button"
-          data-ocid="uvk5mirror.keypad_toggle"
-          onClick={() => setShowKeypad((v) => !v)}
-          style={{
-            ...ctrlBtn("#a855f7"),
-            background: showKeypad ? "rgba(168,85,247,0.15)" : "transparent",
-          }}
-        >
-          {L.keypad}
-        </button>
-
-        <div style={{ flex: 1, minWidth: 8 }} aria-hidden />
-
-        {/* Help */}
-        <Dialog>
-          <DialogTrigger asChild>
-            <button
-              type="button"
-              data-ocid="uvk5mirror.help_button"
-              style={ctrlBtn("#00f0ff88")}
-            >
-              {L.help}
-            </button>
-          </DialogTrigger>
-          <DialogContent
-            style={{
-              background: "#0c1520",
-              border: "1px solid #00f0ff33",
-              color: "#e0e0e0",
-              maxWidth: 560,
-            }}
-          >
-            <DialogHeader>
-              <DialogTitle style={{ color: "#00f0ff", fontSize: 16 }}>
-                {L.helpTitle}
-              </DialogTitle>
-            </DialogHeader>
-            <div style={{ fontSize: 13, lineHeight: 1.7, color: "#ccc" }}>
-              <p style={{ marginBottom: 12 }}>
-                <strong style={{ color: "#00f0ff" }}>Requirements:</strong>
-                <br />• Chrome or Edge browser (Firefox not supported)
-                <br />• HTTPS or localhost
-                <br />• F4HWN custom firmware v4.x+ on your radio
-                <br />• USB programming cable (CP210x or CH340)
-              </p>
-              <p style={{ marginBottom: 12 }}>
-                <strong style={{ color: "#00f0ff" }}>Protocol:</strong>
-                <br />• Header: AA 55
-                <br />• Type 0x01: full frame (1024 bytes, 128×64 1bpp)
-                <br />• Type 0x02: diff blocks (index + 8 bytes per block)
-                <br />• Type 0x03: firmware version string
-              </p>
-              <p style={{ marginBottom: 12 }}>
-                <strong style={{ color: "#22c55e" }}>🔒 RX-only:</strong> No
-                data is written to the radio. Completely safe.
-              </p>
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                <a
-                  href="https://github.com/armel/uv-k1-k5v3-firmware-custom"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    color: "#00f0ff",
-                    fontSize: 13,
-                    borderBottom: "1px solid #00f0ff55",
-                    textDecoration: "none",
-                  }}
-                >
-                  F4HWN GitHub ↗
-                </a>
-                <a
-                  href="https://armel.github.io/k5viewer/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    color: "#00f0ff",
-                    fontSize: 13,
-                    borderBottom: "1px solid #00f0ff55",
-                    textDecoration: "none",
-                  }}
-                >
-                  Official K5 Viewer ↗
-                </a>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Language toggle */}
-        <div
-          style={{
-            display: "flex",
-            gap: 2,
-            background: "rgba(0,0,0,0.4)",
-            borderRadius: 6,
-            padding: 2,
-          }}
-        >
-          {(["en", "fr"] as Language[]).map((lng) => (
-            <button
-              type="button"
-              key={lng}
-              data-ocid="uvk5mirror.language_select"
-              onClick={() => setLanguage(lng)}
-              style={{
-                padding: "4px 9px",
-                borderRadius: 4,
-                border: "none",
-                fontSize: 11,
-                fontWeight: 700,
-                cursor: "pointer",
-                background: language === lng ? "#00f0ff22" : "transparent",
-                color: language === lng ? "#00f0ff" : "#666",
-                letterSpacing: "0.05em",
-                textTransform: "uppercase",
-              }}
-            >
-              {lng}
-            </button>
-          ))}
-        </div>
-
-        {/* Theme dropdown */}
-        <select
-          data-ocid="uvk5mirror.theme_select"
-          value={colorTheme}
-          onChange={(e) => setColorTheme(e.target.value as ColorTheme)}
-          style={{
-            background: "rgba(0,0,0,0.6)",
-            border: "1px solid #00f0ff33",
-            color: "#00f0ff",
-            borderRadius: 5,
-            padding: "5px 8px",
-            fontSize: 12,
-            cursor: "pointer",
-            outline: "none",
-          }}
-        >
-          <option value="blue">Blue LCD</option>
-          <option value="orange">Orange LCD</option>
-          <option value="white">White LCD</option>
-          <option value="grey">Grey LCD</option>
-          <option value="invert">Invert</option>
-        </select>
-
-        {/* Status badge */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 7,
-            padding: "5px 12px",
-            background: `${si.color}18`,
-            border: `1px solid ${si.color}44`,
-            borderRadius: 20,
-            fontSize: 12,
-            fontWeight: 700,
-            letterSpacing: "0.04em",
-            color: si.color,
-            whiteSpace: "nowrap",
-            maxWidth: 220,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-          data-ocid={
-            status === "error"
-              ? "uvk5mirror.error_state"
-              : status === "connected"
-                ? "uvk5mirror.success_state"
-                : status === "connecting" || status === "reconnecting"
-                  ? "uvk5mirror.loading_state"
-                  : undefined
-          }
-        >
-          <span
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: "50%",
-              background: si.color,
-              flexShrink: 0,
-              boxShadow: si.dotAnim ? `0 0 8px ${si.color}` : "none",
-              animation: si.dotAnim
-                ? "neon-pulse 1.5s ease-in-out infinite"
-                : "none",
-            }}
-          />
-          <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
-            {si.label}
-          </span>
-        </div>
-      </div>
-
-      {/* ── Main viewer area ── */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          flexWrap: "wrap",
-          gap: 20,
-          padding: "20px",
-          alignItems: "flex-start",
-          justifyContent: "center",
-        }}
-      >
-        {/* Canvas column */}
-        <div style={{ flex: "1 1 auto", minWidth: 0 }}>
-          {/* Canvas */}
-          <div
-            style={{
-              position: "relative",
-              display: "inline-block",
-              maxWidth: "100%",
-            }}
-          >
-            <div
-              style={{
-                borderRadius: 8,
-                border: "2px solid #00f0ff",
-                boxShadow:
-                  "0 0 40px #00f0ff55, 0 0 80px #00f0ff18, inset 0 0 20px #00183022",
-                overflow: "hidden",
-                background: "#0d1b2a",
-                position: "relative",
-                maxWidth: "100%",
-              }}
-            >
-              <canvas
-                ref={canvasRef}
-                width={W}
-                height={H}
-                data-ocid="uvk5mirror.canvas_target"
-                style={{
-                  display: "block",
-                  width: "100%",
-                  maxWidth: W,
-                  imageRendering: "pixelated",
-                }}
-              />
-              {/* FPS counter */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: 6,
-                  left: 8,
-                  fontSize: 11,
-                  color: "#22c55e",
-                  fontFamily: "monospace",
-                  background: "rgba(0,0,0,0.65)",
-                  padding: "2px 7px",
-                  borderRadius: 4,
-                  letterSpacing: "0.05em",
-                  pointerEvents: "none",
-                }}
-              >
-                {fps} FPS
-              </div>
-              {/* Scanline overlay using CSS for zero canvas perf cost */}
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  backgroundImage:
-                    "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 4px)",
-                  pointerEvents: "none",
-                  borderRadius: 6,
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Zoom + screenshot controls */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              marginTop: 12,
-              flexWrap: "wrap",
-            }}
-          >
-            <span style={{ color: "#555", fontSize: 12 }}>{L.zoom}:</span>
-            <button
-              type="button"
-              data-ocid="uvk5mirror.scale_minus_button"
-              onClick={() => setPixelScale((s) => Math.max(6, s - 1))}
-              style={smallBtn}
-            >
-              −
-            </button>
-            <span
-              style={{
-                minWidth: 36,
-                textAlign: "center",
-                color: "#00f0ff",
-                fontWeight: 700,
-                fontFamily: "monospace",
-                fontSize: 13,
-              }}
-            >
-              {pixelScale}×
-            </span>
-            <button
-              type="button"
-              data-ocid="uvk5mirror.scale_plus_button"
-              onClick={() => setPixelScale((s) => Math.min(16, s + 1))}
-              style={smallBtn}
-            >
-              +
-            </button>
-            <div style={{ flex: 1 }} />
-            <button
-              type="button"
-              data-ocid="uvk5mirror.screenshot_button"
-              onClick={takeScreenshot}
-              style={{
-                ...smallBtn,
-                padding: "5px 14px",
-                fontSize: 12,
-                color: "#a855f7",
-                borderColor: "#a855f755",
-                boxShadow: "0 0 8px #a855f733",
-              }}
-            >
-              {L.screenshot}
-            </button>
-          </div>
-
-          {/* Error message */}
-          {status === "error" && errorMsg && (
-            <div
-              style={{
-                marginTop: 10,
-                padding: "8px 12px",
-                background: "#1a0505",
-                border: "1px solid #ef444466",
-                borderRadius: 6,
-                fontSize: 12,
-                color: "#ef4444",
-              }}
-            >
-              ⚠ {errorMsg}
-            </div>
-          )}
-        </div>
-
-        {/* Keypad overlay */}
-        {showKeypad && (
-          <div
-            style={{
-              background: "rgba(5,15,30,0.7)",
-              border: "1px solid #a855f755",
-              backdropFilter: "blur(8px)",
-              WebkitBackdropFilter: "blur(8px)",
-              borderRadius: 10,
-              padding: 14,
-              width: 160,
-              flexShrink: 0,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 10,
-                color: "#a855f7",
-                textAlign: "center",
-                marginBottom: 10,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                fontWeight: 700,
-              }}
-            >
-              Keypad
-            </div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
-                gap: 4,
-              }}
-            >
-              {keypadCells.map(({ id, label }) => (
-                <div
-                  key={id}
-                  style={{
-                    background:
-                      label === "" ? "transparent" : "rgba(0,240,255,0.05)",
-                    border:
-                      label === ""
-                        ? "1px solid transparent"
-                        : "1px solid #00f0ff22",
-                    borderRadius: 5,
-                    padding: label === "" ? 0 : "7px 4px",
-                    textAlign: "center",
-                    fontSize: 12,
-                    color: "#888",
-                    transition: "all 0.15s",
-                    minHeight: label === "" ? 0 : 28,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (label === "") return;
-                    const el = e.currentTarget as HTMLDivElement;
-                    el.style.background = "rgba(0,240,255,0.15)";
-                    el.style.borderColor = "#00f0ff";
-                    el.style.color = "#00f0ff";
-                    el.style.boxShadow = "0 0 10px #00f0ff44";
-                  }}
-                  onMouseLeave={(e) => {
-                    if (label === "") return;
-                    const el = e.currentTarget as HTMLDivElement;
-                    el.style.background = "rgba(0,240,255,0.05)";
-                    el.style.borderColor = "#00f0ff22";
-                    el.style.color = "#888";
-                    el.style.boxShadow = "none";
-                  }}
-                >
-                  {label}
-                </div>
-              ))}
-            </div>
-            <div
-              style={{
-                marginTop: 10,
-                fontSize: 10,
-                color: "#444",
-                textAlign: "center",
-                lineHeight: 1.4,
-              }}
-            >
-              Visual reference only
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Shared mini styles ────────────────────────────────────────────────────────
-const smallBtn: React.CSSProperties = {
-  padding: "5px 10px",
-  background: "transparent",
-  border: "1px solid #00f0ff55",
-  color: "#00f0ff",
-  borderRadius: 5,
-  fontWeight: 700,
-  fontSize: 13,
-  cursor: "pointer",
-  boxShadow: "0 0 6px #00f0ff22",
-  transition: "all 0.15s",
-};
-
-function ctrlBtn(accentColor: string, disabled = false): React.CSSProperties {
-  return {
-    padding: "6px 14px",
-    background: "transparent",
-    border: `1px solid ${accentColor}`,
-    color: accentColor,
-    borderRadius: 6,
-    fontWeight: 700,
-    fontSize: 12,
-    cursor: disabled ? "not-allowed" : "pointer",
-    boxShadow: `0 0 8px ${accentColor}33`,
-    transition: "all 0.15s",
-    opacity: disabled ? 0.5 : 1,
-    whiteSpace: "nowrap" as const,
-    letterSpacing: "0.02em",
-  };
-}
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
-export default function UVK5LiveMirror() {
-  useEffect(() => {
-    document.title =
-      "UV-K5 & UV-K1 V3 Live LCD Mirror Browser – F4HWN WebSerial Viewer 2026 | HamWaves";
-    const setMeta = (name: string, content: string) => {
-      let el = document.querySelector(
-        `meta[name="${name}"]`,
-      ) as HTMLMetaElement | null;
-      if (!el) {
-        el = document.createElement("meta");
-        el.name = name;
-        document.head.appendChild(el);
-      }
-      el.content = content;
-    };
-    setMeta(
-      "description",
-      "Real-time mirror Quansheng UV-K5 and UV-K1 V3 screen in browser using Web Serial API + F4HWN firmware – elite LCD emulation for scanning, no app install.",
-    );
-    return () => {
-      document.title = "HamWaves";
-    };
-  }, []);
-
-  const steps = [
-    {
-      num: 1,
-      title: "Flash F4HWN Firmware (v4.x+)",
-      desc: "Install the F4HWN custom firmware onto your UV-K5 or UV-K1 (V3). This enables the live LCD mirror protocol over USB serial.",
-      link: {
-        label: "F4HWN GitHub ↗",
-        href: "https://github.com/armel/uv-k1-k5v3-firmware-custom",
-      },
-    },
-    {
-      num: 2,
-      title: "Connect via USB Programming Cable",
-      desc: "Use a Quansheng-compatible USB programming cable (CP210x or CH340 chip). Connect to the radio's speaker/mic port. Power on.",
-      link: null,
-    },
-    {
-      num: 3,
-      title: "Open in Chrome or Edge (HTTPS / localhost)",
-      desc: "Web Serial API requires a secure context. Firefox is not supported. On mobile, USB OTG support is limited — desktop Chrome recommended.",
-      link: null,
-    },
-    {
-      num: 4,
-      title: "Click Connect, Select Your Port",
-      desc: "Press ▶ Connect in the viewer below. A browser port picker dialog appears — select your UV-K5 or UV-K1 V3 serial port.",
-      link: null,
-    },
-    {
-      num: 5,
-      title: "Watch Your LCD Mirror Live!",
-      desc: "The radio display appears in real-time. Use zoom, theme, screenshot, and the keypad overlay for a full monitoring experience.",
-      link: null,
-    },
-  ];
-
-  const linkCards = [
-    {
-      label: "← UV-K5 Review",
-      href: "/equipment-reviews/quansheng-uv-k5" as const,
-      external: false,
-      desc: "Full Quansheng UV-K5 review, firmware comparison & RX tips",
-    },
-    {
-      label: "F4HWN GitHub ↗",
-      href: "https://github.com/armel/uv-k1-k5v3-firmware-custom",
-      external: true,
-      desc: "Official F4HWN custom firmware source code and releases",
-    },
-    {
-      label: "Official K5 Viewer ↗",
-      href: "https://armel.github.io/k5viewer/",
-      external: true,
-      desc: "Armel/F4HWN's official web-based UV-K5 screen viewer (v1.5)",
-    },
-  ];
-
-  return (
-    <main
+      className="min-h-screen"
       style={{
         background: "#0a0a0a",
-        minHeight: "100vh",
         color: "#e0e0e0",
         fontFamily: "Inter, sans-serif",
       }}
     >
-      {/* ── Hero ── */}
-      <section
-        style={{
-          position: "relative",
-          overflow: "hidden",
-          paddingBottom: "2.5rem",
-        }}
-      >
-        {/* Animated bg */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            opacity: 0.1,
-            pointerEvents: "none",
-          }}
+      <title>
+        UV-K5 &amp; UV-K1 V3 Live Mirror + Remote Control – F4HWN Fusion v5.2.0
+        Browser Viewer | HamWaves
+      </title>
+      <meta
+        name="description"
+        content="Real-time LCD mirror and remote keypad control for Quansheng UV-K5 / UV-K1 V3 using WebSerial + F4HWN Fusion v5.2.0 – elite emulation, USB-C support."
+      />
+
+      {/* Navbar Spacer */}
+      <div className="pt-24" />
+
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      <section className="px-4 md:px-8 max-w-7xl mx-auto mb-8">
+        <Link
+          to="/equipment-reviews"
+          className="inline-flex items-center gap-2 text-sm mb-6 transition-colors hover:opacity-80"
+          style={{ color: "#00f0ff" }}
+          data-ocid="mirror.back_link"
         >
-          <svg
-            width="100%"
-            height="100%"
-            viewBox="0 0 1440 420"
-            preserveAspectRatio="xMidYMid slice"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-          >
-            <defs>
-              <radialGradient id="heroGlow" cx="50%" cy="40%" r="60%">
-                <stop offset="0%" stopColor="#00f0ff" stopOpacity="0.35" />
-                <stop offset="100%" stopColor="#0a0a0a" stopOpacity="0" />
-              </radialGradient>
-            </defs>
-            <rect width="1440" height="420" fill="url(#heroGlow)" />
-            {[0, 50, 100, 150, 200].map((off, i) => (
-              <ellipse
-                key={off}
-                cx="720"
-                cy="210"
-                rx={220 + off * 2.5}
-                ry={90 + off * 0.6}
-                fill="none"
-                stroke="#00f0ff"
-                strokeWidth="0.8"
-                opacity={0.45 - i * 0.08}
-              >
-                <animateTransform
-                  attributeName="transform"
-                  type="scale"
-                  values="1;1.035;1"
-                  dur={`${3.5 + i * 0.4}s`}
-                  repeatCount="indefinite"
-                  additive="sum"
-                />
-              </ellipse>
-            ))}
-          </svg>
-        </div>
-
-        <div
-          style={{
-            position: "relative",
-            maxWidth: 900,
-            margin: "0 auto",
-            padding: "0 1.5rem",
-          }}
-        >
-          {/* Breadcrumb */}
-          <div className="pt-28 md:pt-32 flex flex-wrap gap-3 mb-6">
-            <Link
-              to="/equipment-reviews/quansheng-uv-k5"
-              data-ocid="uvk5mirror.link"
-              style={navBtn}
-            >
-              ← UV-K5 Review
-            </Link>
-            <Link
-              to="/equipment-reviews"
-              data-ocid="uvk5mirror.link"
-              style={navBtn}
-            >
-              ← All Reviews
-            </Link>
-          </div>
-
-          {/* Badge */}
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 7,
-                padding: "4px 14px",
-                border: "1px solid #00f0ff44",
-                borderRadius: 20,
-                fontSize: 11,
-                color: "#00f0ff",
-                fontWeight: 700,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                background: "#00f0ff0a",
-                marginBottom: "1.1rem",
-              }}
-            >
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  background: "#00f0ff",
-                  display: "inline-block",
-                  animation: "neon-pulse 2s ease-in-out infinite",
-                }}
-              />
-              WebSerial + Canvas · UV-K5 &amp; UV-K1 V3
-            </span>
-          </motion.div>
-
-          {/* H1 */}
-          <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            style={{
-              fontSize: "clamp(1.7rem, 3.8vw, 2.8rem)",
-              fontWeight: 800,
-              lineHeight: 1.15,
-              color: "#ffffff",
-              marginBottom: "1rem",
-              WebkitTextStroke: "0.5px #000",
-            }}
-          >
-            Live LCD Mirror –{" "}
-            <span style={{ color: "#00f0ff" }}>UV-K5 &amp; UV-K1 V3</span>{" "}
-            Viewer
-            <br />
-            <span
-              style={{ fontSize: "0.62em", color: "#aaa", fontWeight: 500 }}
-            >
-              WebSerial + Canvas
-            </span>
-          </motion.h1>
-
-          {/* Subtitle */}
-          <motion.p
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            style={{
-              fontSize: 15,
-              color: "#999",
-              maxWidth: 680,
-              lineHeight: 1.7,
-              marginBottom: "2rem",
-            }}
-          >
-            Connect your UV-K5 or UV-K1 (V3) via USB programming cable and
-            mirror the exact radio LCD in real-time right in your browser –{" "}
-            <strong style={{ color: "#e0e0e0" }}>no desktop app needed.</strong>{" "}
-            Perfect for scanning demos, spectrum analyzer view, and big-screen
-            monitoring.
-          </motion.p>
-
-          {/* Warning box */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            style={{
-              border: "1px solid #f59e0b88",
-              background: "rgba(245,158,11,0.06)",
-              borderRadius: 8,
-              padding: "12px 16px",
-              fontSize: 13,
-              color: "#fbbf24",
-              lineHeight: 1.65,
-              display: "flex",
-              gap: 10,
-              alignItems: "flex-start",
-            }}
-          >
-            <span style={{ fontSize: 16, flexShrink: 0 }}>⚠️</span>
-            <span>
-              <strong>Chrome/Edge only</strong> (Web Serial API). RX-only safe.
-              No data written to radio. Mobile USB OTG may not work —{" "}
-              <strong>desktop Chrome recommended</strong>.
-            </span>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── Setup Steps ── */}
-      <section
-        style={{ maxWidth: 900, margin: "0 auto", padding: "0 1.5rem 3rem" }}
-      >
-        <motion.h2
-          initial={{ opacity: 0, y: 8 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          style={{
-            fontSize: "clamp(1.2rem, 2.5vw, 1.6rem)",
-            fontWeight: 700,
-            color: "#fff",
-            marginBottom: "1.25rem",
-            WebkitTextStroke: "0.5px #000",
-          }}
-        >
-          Setup Guide
-        </motion.h2>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {steps.map((step, i) => (
-            <motion.div
-              key={step.num}
-              initial={{ opacity: 0, x: -14 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: i * 0.06 }}
-              style={{
-                display: "flex",
-                gap: 14,
-                background: "#0e0e0e",
-                border: "1px solid #00f0ff18",
-                borderRadius: 8,
-                padding: "14px 16px",
-              }}
-            >
-              <div
-                style={{
-                  width: 28,
-                  height: 28,
-                  flexShrink: 0,
-                  borderRadius: "50%",
-                  border: "2px solid #00f0ff",
-                  color: "#00f0ff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontWeight: 800,
-                  fontSize: 13,
-                  fontFamily: "monospace",
-                }}
-              >
-                {step.num}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div
-                  style={{
-                    fontWeight: 700,
-                    color: "#e0e0e0",
-                    marginBottom: 4,
-                    fontSize: 14,
-                  }}
-                >
-                  {step.title}
-                </div>
-                <div style={{ fontSize: 13, color: "#777", lineHeight: 1.6 }}>
-                  {step.desc}
-                </div>
-                {step.link && (
-                  <a
-                    href={step.link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: "inline-block",
-                      marginTop: 8,
-                      fontSize: 12,
-                      color: "#00f0ff",
-                      textDecoration: "none",
-                      borderBottom: "1px solid #00f0ff44",
-                    }}
-                  >
-                    {step.link.label}
-                  </a>
-                )}
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Elite Viewer ── */}
-      <section
-        style={{ maxWidth: 1200, margin: "0 auto", padding: "0 1.5rem 3.5rem" }}
-      >
-        <motion.h2
-          initial={{ opacity: 0, y: 8 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          style={{
-            fontSize: "clamp(1.2rem, 2.5vw, 1.6rem)",
-            fontWeight: 700,
-            color: "#fff",
-            marginBottom: "1.25rem",
-            WebkitTextStroke: "0.5px #000",
-          }}
-        >
-          Live LCD Mirror Viewer
-        </motion.h2>
+          <ChevronLeft size={16} />
+          Back to All Reviews
+        </Link>
 
         <motion.div
-          initial={{ opacity: 0, y: 18 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
         >
-          <EliteUVK5Viewer />
+          <h1
+            className="text-3xl md:text-5xl font-black mb-4 leading-tight"
+            style={{
+              WebkitTextStroke: "1px #00f0ff",
+              color: "transparent",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            UV-K5 &amp; UV-K1 V3 – Elite Live Mirror
+            <br />
+            <span style={{ WebkitTextStroke: "1px #a855f7" }}>
+              + Remote Control (F4HWN Fusion v5.2.0)
+            </span>
+          </h1>
+          <p
+            className="text-base md:text-lg mb-6 max-w-3xl"
+            style={{ color: "#aaa" }}
+          >
+            Mirror and remotely control your UV-K5 or UV-K1 V3 LCD in the
+            browser – live display + virtual keypad. F4HWN Fusion v5.2.0
+            compatible, USB-C support, no app needed!
+          </p>
+
+          {/* Warning badges */}
+          <div className="flex flex-wrap gap-3 mb-2">
+            {[
+              {
+                icon: <AlertTriangle size={14} />,
+                text: "Chrome / Edge only – Web Serial API",
+              },
+              {
+                icon: <Radio size={14} />,
+                text: "F4HWN Fusion v5.2.0+ required",
+              },
+              {
+                icon: <ZapOff size={14} />,
+                text: "No config written – key emulation only",
+              },
+              {
+                icon: <Usb size={14} />,
+                text: "UV-K5 (Kenwood 2-pin cable) · UV-K1 V3 (direct USB-C – no adapter)",
+              },
+            ].map((w) => (
+              <span
+                key={w.text}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border"
+                style={{
+                  background: "rgba(255,140,0,0.08)",
+                  borderColor: "rgba(255,140,0,0.4)",
+                  color: "#f0c040",
+                }}
+              >
+                {w.icon} {w.text}
+              </span>
+            ))}
+          </div>
         </motion.div>
       </section>
 
-      {/* ── Links ── */}
-      <section
-        style={{ maxWidth: 900, margin: "0 auto", padding: "0 1.5rem 5rem" }}
-      >
-        <motion.h2
-          initial={{ opacity: 0, y: 8 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
+      {/* ── Setup Instructions ────────────────────────────────────────────── */}
+      <section className="px-4 md:px-8 max-w-7xl mx-auto mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="rounded-xl p-5 border"
           style={{
-            fontSize: "1.3rem",
-            fontWeight: 700,
-            color: "#fff",
-            marginBottom: "1.1rem",
-            WebkitTextStroke: "0.5px #000",
+            background: "rgba(10,20,40,0.7)",
+            backdropFilter: "blur(12px)",
+            borderColor: "rgba(0,240,255,0.15)",
           }}
         >
-          Related Resources
-        </motion.h2>
+          <h2 className="text-base font-bold mb-4" style={{ color: "#00f0ff" }}>
+            {lang === "fr" ? "Configuration rapide" : "Quick Setup"}
+          </h2>
+          <ol className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {(lang === "fr"
+              ? [
+                  "Flashez F4HWN Fusion v5.2.0 sur votre UV-K5 ou UV-K1 V3",
+                  "UV-K5 : câble USB Kenwood 2 broches. UV-K1 V3 : câble USB-C direct (pas d'adaptateur)",
+                  "Ouvrez cette page dans Chrome ou Edge (HTTPS requis)",
+                  "Sélectionnez votre modèle (UV-K5 ou UV-K1 V3) dans la barre",
+                  "Cliquez sur Connecter et choisissez le port série",
+                  "L'écran se miroir en direct – utilisez le clavier pour contrôler la radio",
+                ]
+              : [
+                  "Flash F4HWN Fusion v5.2.0 firmware to your UV-K5 or UV-K1 V3",
+                  "UV-K5: use 2-pin Kenwood USB cable. UV-K1 V3: direct USB-C data cable – no adapter needed",
+                  "Open in Chrome or Edge over HTTPS (Web Serial API required)",
+                  "Select your model (UV-K5 or UV-K1 V3) in the control bar",
+                  "Click Connect and select your radio's serial port",
+                  "Radio LCD mirrors live – use the keypad to remotely control your radio",
+                ]
+            ).map((step, i) => (
+              <li
+                key={step}
+                className="flex items-start gap-3 text-sm"
+                style={{ color: "#ccc" }}
+              >
+                <span
+                  className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5"
+                  style={{
+                    background: "rgba(0,240,255,0.15)",
+                    color: "#00f0ff",
+                    border: "1px solid rgba(0,240,255,0.3)",
+                  }}
+                >
+                  {i + 1}
+                </span>
+                {step}
+              </li>
+            ))}
+          </ol>
+        </motion.div>
+      </section>
 
+      {/* ── Error message ─────────────────────────────────────────────────── */}
+      {errorMsg && (
+        <section className="px-4 md:px-8 max-w-7xl mx-auto mb-4">
+          <div
+            className="rounded-xl px-5 py-3 border text-sm flex items-center gap-3"
+            style={{
+              background: "rgba(255,60,60,0.08)",
+              borderColor: "rgba(255,60,60,0.4)",
+              color: "#ff8080",
+            }}
+            data-ocid="mirror.error_state"
+          >
+            <AlertTriangle size={16} />
+            {errorMsg}
+          </div>
+        </section>
+      )}
+
+      {/* ── Viewer Area ──────────────────────────────────────────────────── */}
+      <section
+        className="px-2 md:px-8 max-w-7xl mx-auto mb-10"
+        style={{
+          background: "#090e1a",
+          borderRadius: 16,
+          padding: 20,
+          border: "1px solid rgba(0,240,255,0.1)",
+        }}
+      >
+        {/* ── Control Bar ─────────────────────────────────────────────────── */}
         <div
+          className="flex flex-wrap items-center gap-2 p-3 rounded-xl mb-6 border"
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-            gap: 14,
+            background: "#0d1117",
+            borderColor: "rgba(0,240,255,0.2)",
+            backdropFilter: "blur(8px)",
           }}
         >
-          {linkCards.map((card, ci) => (
-            <motion.div
-              key={card.href}
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: ci * 0.07 }}
+          {/* Connect */}
+          <button
+            type="button"
+            onClick={connect}
+            disabled={
+              isConnected ||
+              status === "connecting" ||
+              status === "reconnecting"
+            }
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-semibold transition-all"
+            style={{
+              borderColor: isConnected ? "rgba(0,240,255,0.3)" : "#00f0ff",
+              color: isConnected ? "rgba(0,240,255,0.5)" : "#00f0ff",
+              background: isConnected
+                ? "rgba(0,240,255,0.05)"
+                : "rgba(0,240,255,0.1)",
+              boxShadow: isConnected ? "none" : "0 0 12px rgba(0,240,255,0.3)",
+            }}
+            data-ocid="mirror.connect_button"
+          >
+            <Wifi size={14} />
+            {lang === "fr" ? "Connecter" : "Connect"}
+          </button>
+
+          {/* Disconnect */}
+          <button
+            type="button"
+            onClick={disconnect}
+            disabled={!isConnected && status !== "reconnecting"}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-semibold transition-all"
+            style={{
+              borderColor: isConnected
+                ? "rgba(255,80,80,0.7)"
+                : "rgba(255,80,80,0.2)",
+              color: isConnected ? "#ff6060" : "rgba(255,96,96,0.4)",
+              background: "rgba(255,60,60,0.05)",
+            }}
+            data-ocid="mirror.disconnect_button"
+          >
+            <WifiOff size={14} />
+            {lang === "fr" ? "Déconnecter" : "Disconnect"}
+          </button>
+
+          {/* Keypad Toggle */}
+          <button
+            type="button"
+            onClick={() => setShowKeypad((p) => !p)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-semibold transition-all"
+            style={{
+              borderColor: showKeypad ? "#00f0ff" : "rgba(0,240,255,0.2)",
+              color: showKeypad ? "#00f0ff" : "rgba(0,240,255,0.5)",
+              background: showKeypad ? "rgba(0,240,255,0.1)" : "transparent",
+            }}
+            data-ocid="mirror.keypad_toggle"
+          >
+            <Keyboard size={14} />
+            {lang === "fr" ? "Clavier" : "Keypad"}
+          </button>
+
+          {/* Help */}
+          <button
+            type="button"
+            onClick={() => setShowHelp((p) => !p)}
+            className="px-3 py-2 rounded-lg border text-sm font-semibold transition-all"
+            style={{
+              borderColor: showHelp ? "#a855f7" : "rgba(168,85,247,0.2)",
+              color: showHelp ? "#a855f7" : "rgba(168,85,247,0.5)",
+              background: showHelp ? "rgba(168,85,247,0.1)" : "transparent",
+            }}
+            data-ocid="mirror.help_toggle"
+          >
+            {lang === "fr" ? "Aide" : "Help"}
+          </button>
+
+          {/* Language */}
+          <div
+            className="flex rounded-lg overflow-hidden border"
+            style={{ borderColor: "rgba(0,240,255,0.2)" }}
+          >
+            {(["en", "fr"] as Lang[]).map((l) => (
+              <button
+                key={l}
+                type="button"
+                onClick={() => setLang(l)}
+                className="px-3 py-2 text-xs font-bold transition-all"
+                style={{
+                  background:
+                    lang === l ? "rgba(0,240,255,0.15)" : "transparent",
+                  color: lang === l ? "#00f0ff" : "#666",
+                }}
+              >
+                {l.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
+          {/* Theme */}
+          <div
+            className="flex rounded-lg overflow-hidden border"
+            style={{ borderColor: "rgba(0,240,255,0.2)" }}
+          >
+            {(Object.keys(THEMES) as ThemeName[]).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTheme(t)}
+                className="px-2.5 py-2 text-xs font-semibold transition-all"
+                style={{
+                  background:
+                    theme === t ? "rgba(0,240,255,0.15)" : "transparent",
+                  color: theme === t ? "#00f0ff" : "#666",
+                }}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+
+          {/* Model */}
+          <div
+            className="flex items-center gap-3 px-3 py-2 rounded-lg border"
+            style={{
+              borderColor: "rgba(0,240,255,0.2)",
+              background: "rgba(0,240,255,0.03)",
+            }}
+            data-ocid="mirror.model.radio"
+          >
+            {(["UV-K5", "UV-K1 V3"] as ModelName[]).map((m) => (
+              <label
+                key={m}
+                className="flex items-center gap-1.5 cursor-pointer"
+              >
+                <input
+                  type="radio"
+                  name="model"
+                  value={m}
+                  checked={model === m}
+                  onChange={() => setModel(m)}
+                  className="accent-[#00f0ff]"
+                />
+                <span
+                  className="text-xs font-semibold"
+                  style={{ color: model === m ? "#00f0ff" : "#888" }}
+                >
+                  {m}
+                </span>
+              </label>
+            ))}
+          </div>
+
+          {/* Zoom */}
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setScale((s) => Math.max(6, s - 1))}
+              className="w-8 h-8 rounded-lg border flex items-center justify-center transition-all hover:border-[#00f0ff]"
+              style={{ borderColor: "rgba(0,240,255,0.2)", color: "#00f0ff" }}
+              data-ocid="mirror.zoom_out_button"
             >
-              {card.external ? (
-                <a
-                  href={card.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={resCard}
-                  onMouseEnter={(e) => resCardHover(e as any, true)}
-                  onMouseLeave={(e) => resCardHover(e as any, false)}
-                >
+              <Minus size={14} />
+            </button>
+            <span className="text-xs font-mono px-2" style={{ color: "#888" }}>
+              {scale}×
+            </span>
+            <button
+              type="button"
+              onClick={() => setScale((s) => Math.min(16, s + 1))}
+              className="w-8 h-8 rounded-lg border flex items-center justify-center transition-all hover:border-[#00f0ff]"
+              style={{ borderColor: "rgba(0,240,255,0.2)", color: "#00f0ff" }}
+              data-ocid="mirror.zoom_in_button"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+
+          {/* Screenshot */}
+          <button
+            type="button"
+            onClick={takeScreenshot}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-semibold transition-all hover:shadow-[0_0_10px_#a855f755]"
+            style={{
+              borderColor: "rgba(168,85,247,0.4)",
+              color: "#a855f7",
+              background: "rgba(168,85,247,0.05)",
+            }}
+            data-ocid="mirror.screenshot_button"
+          >
+            <Camera size={14} />
+            {lang === "fr" ? "Capture" : "Screenshot"}
+          </button>
+
+          {/* Status badge – right side */}
+          <div
+            className="ml-auto flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-mono whitespace-nowrap"
+            style={{
+              borderColor: `${sc.color}33`,
+              color: sc.color,
+              background: `${sc.color}11`,
+            }}
+            data-ocid="mirror.status_panel"
+          >
+            <span
+              className="w-2 h-2 rounded-full flex-shrink-0"
+              style={{
+                background: sc.color,
+                boxShadow: `0 0 6px ${sc.color}`,
+                animation:
+                  status === "connected" || status === "reconnecting"
+                    ? "blink 1.5s infinite"
+                    : "none",
+              }}
+            />
+            {lang === "fr" ? sc.frLabel : sc.label}
+            {status === "reconnecting" &&
+              reconnectCountdown > 0 &&
+              ` (${reconnectCountdown}s)`}
+          </div>
+        </div>
+
+        {/* Help panel */}
+        {showHelp && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="rounded-xl p-4 border mb-6 text-sm"
+            style={{
+              background: "rgba(168,85,247,0.06)",
+              borderColor: "rgba(168,85,247,0.3)",
+              color: "#ccc",
+            }}
+          >
+            <p className="font-bold mb-2" style={{ color: "#a855f7" }}>
+              {lang === "fr" ? "Aide & Protocole" : "Help & Protocol"}
+            </p>
+            <ul className="space-y-1 list-disc list-inside">
+              <li>
+                <span style={{ color: "#00f0ff" }}>Baud:</span> {BAUD} (F4HWN
+                Fusion v5.2.0)
+              </li>
+              <li>
+                <span style={{ color: "#00f0ff" }}>Header:</span> AA 55
+              </li>
+              <li>
+                <span style={{ color: "#00f0ff" }}>Type 01:</span> Full frame –
+                1024 bytes
+              </li>
+              <li>
+                <span style={{ color: "#00f0ff" }}>Type 02:</span> Diff –
+                packets of (1-byte index + 8 bytes); size field = total bytes
+              </li>
+              <li>
+                <span style={{ color: "#00f0ff" }}>Keepalive TX:</span> 55 AA 00
+                00 every 1s
+              </li>
+              <li>
+                <span style={{ color: "#00f0ff" }}>Key TX:</span> AA 55
+                [01=short | 81=long] [keycode]
+              </li>
+              <li>
+                <span style={{ color: "#00f0ff" }}>UV-K1 V3 cable:</span>
+                direct USB-C data cable – no adapter needed
+              </li>
+            </ul>
+          </motion.div>
+        )}
+
+        {/* ── Canvas + Keypad ──────────────────────────────────────────────── */}
+        <div className="flex flex-col lg:flex-row gap-6 items-start justify-center">
+          {/* LCD Canvas */}
+          <div className="flex-1 flex flex-col items-center w-full">
+            {/* FPS */}
+            <div
+              className="self-start mb-2 font-mono text-xs"
+              style={{ color: "rgba(0,240,255,0.5)" }}
+            >
+              {fps} FPS
+            </div>
+
+            {/* Canvas container */}
+            <div
+              className="relative overflow-auto max-w-full"
+              style={{
+                border: THEMES[theme].glow
+                  ? "1px solid rgba(0,200,255,0.4)"
+                  : "1px solid rgba(0,240,255,0.15)",
+                borderRadius: 4,
+                boxShadow: THEMES[theme].glow
+                  ? "0 0 40px 10px rgba(0,100,200,0.35), 0 0 80px 20px rgba(0,60,140,0.15), inset 0 0 20px rgba(0,100,200,0.1)"
+                  : "0 0 20px rgba(0,0,0,0.5)",
+                lineHeight: 0,
+              }}
+            >
+              <canvas
+                ref={canvasRef}
+                width={canvasW}
+                height={canvasH}
+                style={{
+                  display: "block",
+                  maxWidth: "100%",
+                  imageRendering: "pixelated",
+                }}
+                data-ocid="mirror.canvas_target"
+              />
+              {/* Scanline overlay */}
+              <canvas
+                ref={scanlineCanvasRef}
+                width={canvasW}
+                height={canvasH}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  pointerEvents: "none",
+                  maxWidth: "100%",
+                }}
+              />
+            </div>
+
+            {!isConnected && (
+              <div
+                className="mt-4 text-center text-sm px-4"
+                style={{ color: "rgba(0,240,255,0.4)" }}
+              >
+                {lang === "fr"
+                  ? "Connectez votre radio pour voir l'écran LCD en direct"
+                  : "Connect your radio to see the live LCD mirror"}
+              </div>
+            )}
+          </div>
+
+          {/* Keypad Panel */}
+          {showKeypad && (
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="rounded-xl p-4 border flex-shrink-0"
+              style={{
+                width: 224,
+                background: "rgba(10,20,40,0.85)",
+                backdropFilter: "blur(14px)",
+                borderColor: "rgba(0,240,255,0.25)",
+                boxShadow: "0 0 24px rgba(0,240,255,0.06)",
+              }}
+            >
+              <div
+                className="text-xs font-bold mb-3 tracking-widest text-center"
+                style={{ color: "rgba(0,240,255,0.6)" }}
+              >
+                {lang === "fr" ? "CLAVIER RADIO" : "RADIO KEYPAD"}
+              </div>
+              <div
+                className="text-xs text-center mb-3 font-mono"
+                style={{ color: "rgba(255,255,255,0.25)" }}
+              >
+                {model}
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                {KEYPAD_ROWS.map((row) => (
                   <div
-                    style={{
-                      fontWeight: 700,
-                      color: "#00f0ff",
-                      fontSize: 14,
-                      marginBottom: 6,
-                    }}
+                    key={row.map((r) => r.id).join("-")}
+                    className="grid gap-1.5"
+                    style={{ gridTemplateColumns: "repeat(3, 1fr)" }}
                   >
-                    {card.label}
+                    {row.map(({ id, span }) => (
+                      <KeypadBtn
+                        key={id}
+                        keyId={id}
+                        span={span}
+                        lang={lang}
+                        disabled={!isConnected}
+                        onSendKey={sendKey}
+                      />
+                    ))}
                   </div>
-                  <div style={{ fontSize: 12, color: "#555", lineHeight: 1.5 }}>
-                    {card.desc}
-                  </div>
-                </a>
-              ) : (
-                <Link
-                  to={card.href as "/equipment-reviews/quansheng-uv-k5"}
-                  style={resCard}
-                  onMouseEnter={(e) => resCardHover(e as any, true)}
-                  onMouseLeave={(e) => resCardHover(e as any, false)}
-                >
-                  <div
-                    style={{
-                      fontWeight: 700,
-                      color: "#00f0ff",
-                      fontSize: 14,
-                      marginBottom: 6,
-                    }}
-                  >
-                    {card.label}
-                  </div>
-                  <div style={{ fontSize: 12, color: "#555", lineHeight: 1.5 }}>
-                    {card.desc}
-                  </div>
-                </Link>
-              )}
+                ))}
+              </div>
+
+              <div
+                className="mt-3 text-center text-xs"
+                style={{ color: "rgba(255,255,255,0.3)" }}
+              >
+                {lang === "fr"
+                  ? "Clic = court · Maintenir = long"
+                  : "Click = short · Hold = long press"}
+              </div>
             </motion.div>
-          ))}
+          )}
+        </div>
+
+        {/* Mobile OTG warning */}
+        <div
+          className="mt-4 text-center text-xs md:hidden"
+          style={{ color: "rgba(255,200,0,0.6)" }}
+        >
+          <AlertTriangle size={12} className="inline mr-1" />
+          USB OTG has limited Web Serial support on mobile. UV-K1 V3 USB-C is
+          best tested on desktop.
         </div>
       </section>
 
-      {/* ── Footer ── */}
+      {/* ── Info / Warnings ──────────────────────────────────────────────── */}
+      <section className="px-4 md:px-8 max-w-5xl mx-auto mb-12">
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Warnings */}
+          <div
+            className="rounded-xl p-5 border"
+            style={{
+              background: "rgba(10,20,40,0.6)",
+              borderColor: "rgba(0,240,255,0.1)",
+            }}
+          >
+            <h3 className="font-bold mb-4 text-sm" style={{ color: "#f0c040" }}>
+              ⚠ {lang === "fr" ? "Avertissements" : "Warnings"}
+            </h3>
+            <ul className="space-y-3 text-sm" style={{ color: "#bbb" }}>
+              {[
+                "Chrome/Edge only. Web Serial not available in Firefox/Safari.",
+                "RX/TX via remote control – transmit legally, ensure you are licensed.",
+                "No radio config is written – key press emulation only.",
+                "HTTPS required for Web Serial API.",
+                "UV-K1 V3: use direct USB-C data cable. UV-K5: 2-pin Kenwood programming cable.",
+              ].map((w) => (
+                <li key={w} className="flex items-start gap-2">
+                  <span style={{ color: "#f0c040" }}>▸</span>
+                  {w}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Protocol */}
+          <div
+            className="rounded-xl p-5 border"
+            style={{
+              background: "rgba(10,20,40,0.6)",
+              borderColor: "rgba(0,240,255,0.1)",
+            }}
+          >
+            <h3 className="font-bold mb-4 text-sm" style={{ color: "#00f0ff" }}>
+              📡 F4HWN Fusion v5.2.0 Protocol
+            </h3>
+            <ul className="space-y-2 text-sm" style={{ color: "#bbb" }}>
+              <li>
+                <span style={{ color: "#00f0ff" }}>Baud:</span> {BAUD}
+              </li>
+              <li>
+                <span style={{ color: "#00f0ff" }}>Header:</span> AA 55
+              </li>
+              <li>
+                <span style={{ color: "#00f0ff" }}>Type 01:</span> Full frame –
+                1024 bytes framebuffer
+              </li>
+              <li>
+                <span style={{ color: "#00f0ff" }}>Type 02:</span> Diff –
+                (size/9) blocks × (1-byte index + 8 bytes data)
+              </li>
+              <li>
+                <span style={{ color: "#00f0ff" }}>Keepalive TX:</span> 55 AA 00
+                00 every ~1s
+              </li>
+              <li>
+                <span style={{ color: "#00f0ff" }}>Key TX:</span> AA 55
+                [01=short | 81=long] [keycode]
+              </li>
+              <li>
+                <span style={{ color: "#00f0ff" }}>LCD:</span> 128×64 px, 1-bit
+                packed MSB-first
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Links */}
+        <div
+          className="mt-6 rounded-xl p-5 border flex flex-wrap gap-4"
+          style={{
+            background: "rgba(10,20,40,0.6)",
+            borderColor: "rgba(0,240,255,0.1)",
+          }}
+        >
+          <h3 className="w-full font-bold text-sm" style={{ color: "#00f0ff" }}>
+            🔗 {lang === "fr" ? "Liens utiles" : "Useful Links"}
+          </h3>
+          <Link
+            to="/equipment-reviews/quansheng-uv-k5"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-semibold transition-all hover:shadow-[0_0_10px_#00f0ff44]"
+            style={{ borderColor: "rgba(0,240,255,0.3)", color: "#00f0ff" }}
+          >
+            <Radio size={14} /> Back to UV-K5 Review
+          </Link>
+          <a
+            href="https://github.com/armel/uv-k1-k5v3-firmware-custom"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-semibold transition-all hover:shadow-[0_0_10px_#a855f744]"
+            style={{ borderColor: "rgba(168,85,247,0.3)", color: "#a855f7" }}
+          >
+            <Github size={14} /> F4HWN Firmware GitHub
+          </a>
+          <a
+            href="https://armel.github.io/k5viewer/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-semibold transition-all hover:shadow-[0_0_10px_#a855f744]"
+            style={{ borderColor: "rgba(168,85,247,0.3)", color: "#a855f7" }}
+          >
+            <ExternalLink size={14} /> Official K5Viewer
+          </a>
+        </div>
+      </section>
+
+      {/* ── Subscribe CTA ────────────────────────────────────────────────── */}
+      <section className="px-4 md:px-8 max-w-3xl mx-auto mb-16 text-center">
+        <div
+          className="rounded-2xl p-8 border"
+          style={{
+            background: "rgba(10,20,40,0.6)",
+            borderColor: "rgba(0,240,255,0.15)",
+          }}
+        >
+          <h3 className="text-xl font-bold mb-2" style={{ color: "#e0e0e0" }}>
+            {lang === "fr"
+              ? "Besoin d'aide pour démarrer ?"
+              : "Need help getting started?"}
+          </h3>
+          <p className="text-sm mb-5" style={{ color: "#888" }}>
+            {lang === "fr"
+              ? "Abonnez-vous à HamWaves pour des guides débutants, des tests d'équipements et des conseils radio !"
+              : "Subscribe to HamWaves for beginner guides, equipment tests, and radio tips!"}
+          </p>
+          <div className="flex flex-wrap gap-3 justify-center">
+            <a
+              href="https://www.youtube.com/@dmtoozer"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all hover:shadow-[0_0_20px_rgba(0,240,255,0.35)]"
+              style={{
+                background: "rgba(0,240,255,0.1)",
+                border: "1px solid #00f0ff",
+                color: "#00f0ff",
+                boxShadow: "0 0 16px rgba(0,240,255,0.2)",
+              }}
+            >
+              Subscribe to HamWaves →
+            </a>
+            <a
+              href="https://github.com/armel/uv-k1-k5v3-firmware-custom"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all hover:shadow-[0_0_16px_rgba(168,85,247,0.3)]"
+              style={{
+                background: "rgba(168,85,247,0.08)",
+                border: "1px solid rgba(168,85,247,0.4)",
+                color: "#a855f7",
+              }}
+            >
+              <RefreshCw size={14} /> F4HWN v5.2.0 Firmware
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Footer ───────────────────────────────────────────────────────── */}
       <footer
-        style={{
-          borderTop: "1px solid #1a1a1a",
-          padding: "1.5rem",
-          textAlign: "center",
-          fontSize: 12,
-          color: "#444",
-        }}
+        className="py-8 text-center text-xs border-t"
+        style={{ borderColor: "rgba(255,255,255,0.05)", color: "#555" }}
       >
-        © {new Date().getFullYear()}. Built with love using{" "}
+        © {new Date().getFullYear()}.{" "}
         <a
-          href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(typeof window !== "undefined" ? window.location.hostname : "")}`}
+          href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: "#00f0ff", textDecoration: "none" }}
+          style={{ color: "#00f0ff" }}
         >
-          caffeine.ai
+          Built with love using caffeine.ai
         </a>
       </footer>
-    </main>
+
+      <style>{`
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
+        }
+      `}</style>
+    </div>
   );
 }
-
-// ── Style constants ───────────────────────────────────────────────────────────
-const navBtn: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  padding: "7px 16px",
-  background: "transparent",
-  border: "1px solid #00f0ff55",
-  color: "#00f0ff",
-  borderRadius: 6,
-  fontWeight: 600,
-  fontSize: 12,
-  textDecoration: "none",
-  boxShadow: "0 0 6px #00f0ff22",
-  transition: "all 0.15s",
-  letterSpacing: "0.02em",
-};
-
-const resCard: React.CSSProperties = {
-  display: "block",
-  background: "#0e0e0e",
-  border: "1px solid #00f0ff22",
-  borderRadius: 8,
-  padding: "14px 16px",
-  textDecoration: "none",
-  transition: "border-color 0.15s, box-shadow 0.15s",
-  height: "100%",
-};
-
-const resCardHover = (e: React.MouseEvent<HTMLElement>, enter: boolean) => {
-  const el = e.currentTarget as HTMLElement;
-  el.style.borderColor = enter ? "#00f0ff66" : "#00f0ff22";
-  el.style.boxShadow = enter ? "0 0 20px #00f0ff18" : "none";
-};
