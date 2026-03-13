@@ -1,6 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import {
   Antenna,
+  BookOpen,
   ChevronLeft,
   ChevronRight,
   Play,
@@ -65,7 +66,6 @@ export default function Home() {
   const { count: videoCount, ref: videoRef } = useCountUp(allVideos.length);
   const { count: guideCount, ref: guideRef } = useCountUp(activeGuides.length);
 
-  // SEO meta
   useEffect(() => {
     document.title =
       "Beginner Ham Radio Scanning RX Only | HamWaves – Budget Radio Guides & Reviews";
@@ -119,6 +119,125 @@ export default function Home() {
       transition={{ duration: 0.35 }}
       data-ocid="home.page"
     >
+      <style>{`
+        .logo-hero-box {
+          width: 176px;
+          height: 176px;
+          border: 2px solid rgba(0,240,255,0.65);
+          border-radius: 16px;
+          background: rgba(0,0,0,0.25);
+          box-shadow: 0 0 40px rgba(0,240,255,0.45), 0 0 80px rgba(0,240,255,0.18);
+          padding: 8px;
+          cursor: default;
+          transition: box-shadow 0.3s ease;
+        }
+        .logo-hero-box:hover {
+          animation: logoPulse 1.5s ease-in-out infinite;
+          box-shadow: 0 0 60px rgba(0,240,255,0.7), 0 0 120px rgba(0,240,255,0.3);
+        }
+        @media (min-width: 640px) {
+          .logo-hero-box { width: 224px; height: 224px; }
+        }
+        @media (min-width: 1024px) {
+          .logo-hero-box { width: 272px; height: 272px; }
+        }
+        @keyframes logoPulse {
+          0%, 100% { box-shadow: 0 0 60px rgba(0,240,255,0.65), 0 0 120px rgba(0,240,255,0.25); }
+          50% { box-shadow: 0 0 90px rgba(0,240,255,0.9), 0 0 160px rgba(0,240,255,0.45); }
+        }
+        @keyframes neonPulseCyanBtn {
+          0%, 100% { box-shadow: 0 0 18px rgba(0,240,255,0.5), inset 0 0 10px rgba(0,240,255,0.05); }
+          50% { box-shadow: 0 0 36px rgba(0,240,255,0.85), inset 0 0 18px rgba(0,240,255,0.1); }
+        }
+        @keyframes neonPulsePurpleBtn {
+          0%, 100% { box-shadow: 0 0 18px rgba(168,85,247,0.5), inset 0 0 10px rgba(168,85,247,0.05); }
+          50% { box-shadow: 0 0 36px rgba(168,85,247,0.85), inset 0 0 18px rgba(168,85,247,0.1); }
+        }
+        .hero-btn-cyan {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 0.85rem 2rem;
+          border-radius: 10px;
+          font-size: 1.05rem;
+          font-weight: 700;
+          color: #00f0ff;
+          background: rgba(0,240,255,0.1);
+          border: 1.5px solid rgba(0,240,255,0.55);
+          text-decoration: none;
+          transition: background 0.2s ease;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+        .hero-btn-cyan:hover {
+          background: rgba(0,240,255,0.18);
+          animation: neonPulseCyanBtn 1.4s ease-in-out infinite;
+        }
+        .hero-btn-purple {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 0.85rem 2rem;
+          border-radius: 10px;
+          font-size: 1.05rem;
+          font-weight: 700;
+          color: #a855f7;
+          background: rgba(168,85,247,0.1);
+          border: 1.5px solid rgba(168,85,247,0.55);
+          text-decoration: none;
+          transition: background 0.2s ease;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+        .hero-btn-purple:hover {
+          background: rgba(168,85,247,0.18);
+          animation: neonPulsePurpleBtn 1.4s ease-in-out infinite;
+        }
+        @media (max-width: 639px) {
+          .hero-btn-cyan, .hero-btn-purple {
+            width: 100%;
+            justify-content: center;
+            padding: 0.9rem 1rem;
+          }
+        }
+        .kw-cyan { color: #00f0ff; cursor: default; }
+        .kw-purple { color: #a855f7; cursor: default; }
+        @keyframes cardPulseCyan {
+          0%, 100% { box-shadow: 0 0 20px rgba(0,240,255,0.15); }
+          50% { box-shadow: 0 0 35px rgba(0,240,255,0.3); }
+        }
+        @keyframes cardPulsePurple {
+          0%, 100% { box-shadow: 0 0 20px rgba(168,85,247,0.15); }
+          50% { box-shadow: 0 0 35px rgba(168,85,247,0.3); }
+        }
+        .stat-card-cyan {
+          background: #111111;
+          border: 1px solid rgba(0,240,255,0.35);
+          box-shadow: 0 0 20px rgba(0,240,255,0.15);
+          border-radius: 12px;
+          padding: 1.75rem 1.5rem;
+          text-align: center;
+          transition: transform 0.3s ease;
+        }
+        .stat-card-cyan:hover {
+          transform: translateY(-5px);
+          animation: cardPulseCyan 1.8s ease-in-out infinite;
+        }
+        .stat-card-purple {
+          background: #111111;
+          border: 1px solid rgba(168,85,247,0.35);
+          box-shadow: 0 0 20px rgba(168,85,247,0.15);
+          border-radius: 12px;
+          padding: 1.75rem 1.5rem;
+          text-align: center;
+          transition: transform 0.3s ease;
+        }
+        .stat-card-purple:hover {
+          transform: translateY(-5px);
+          animation: cardPulsePurple 1.8s ease-in-out infinite;
+        }
+      `}</style>
+
       {/* ========= HERO ========= */}
       <section
         className="relative flex flex-col items-center justify-center overflow-hidden"
@@ -126,8 +245,6 @@ export default function Home() {
         data-ocid="home.section"
       >
         <RadioWavesBg />
-
-        {/* Radial glow */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -136,7 +253,7 @@ export default function Home() {
           }}
         />
 
-        <div className="relative z-10 flex flex-col items-center text-center px-4">
+        <div className="relative z-10 flex flex-col items-center text-center px-4 w-full max-w-2xl">
           {/* Logo */}
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
@@ -176,44 +293,64 @@ export default function Home() {
             variants={fadeUp}
             initial="hidden"
             animate="visible"
-            className="text-base sm:text-lg mb-7 tracking-wide"
+            className="text-base sm:text-lg mb-8 tracking-wide"
             style={{ color: "#707070" }}
           >
             Equipment breakdowns&nbsp;&nbsp;•&nbsp;&nbsp;Field
             ops&nbsp;&nbsp;•&nbsp;&nbsp;Shorts
           </motion.p>
 
+          {/* CTA Buttons */}
           <motion.div
             custom={3}
             variants={fadeUp}
             initial="hidden"
             animate="visible"
-            className="flex flex-col sm:flex-row items-center gap-4"
+            className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto"
           >
             <motion.a
               href="https://www.youtube.com/@dmtoozer"
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-neon-cyan text-base px-8 py-3"
+              className="hero-btn-cyan"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.97 }}
               data-ocid="home.primary_button"
             >
-              <Play size={18} fill="currentColor" />
+              <Play size={20} fill="currentColor" />
               Watch Latest Video
             </motion.a>
-            <motion.a
-              href="https://www.youtube.com/@dmtoozer?sub_confirmation=1"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-neon-purple text-base px-8 py-3"
+            <motion.button
+              type="button"
+              onClick={() => navigate({ to: "/equipment-reviews" as const })}
+              className="hero-btn-purple"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.97 }}
               data-ocid="home.secondary_button"
             >
-              <Youtube size={18} />
+              <BookOpen size={20} />
+              Explore Guides
+            </motion.button>
+          </motion.div>
+
+          {/* Subscribe sub-link */}
+          <motion.div
+            custom={4}
+            variants={fadeUp}
+            initial="hidden"
+            animate="visible"
+            className="mt-4"
+          >
+            <a
+              href="https://www.youtube.com/@dmtoozer?sub_confirmation=1"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm"
+              style={{ color: "#505050", textDecoration: "none" }}
+            >
+              <Youtube size={14} />
               Subscribe on YouTube
-            </motion.a>
+            </a>
           </motion.div>
         </div>
 
@@ -241,88 +378,12 @@ export default function Home() {
         className="max-w-4xl mx-auto px-4 py-24"
         data-ocid="home.section"
       >
-        <style>{`
-          .logo-hero-box {
-            width: 176px;
-            height: 176px;
-            border: 2px solid rgba(0,240,255,0.65);
-            border-radius: 16px;
-            background: rgba(0,0,0,0.25);
-            box-shadow: 0 0 40px rgba(0,240,255,0.45), 0 0 80px rgba(0,240,255,0.18);
-            padding: 8px;
-            cursor: default;
-            transition: box-shadow 0.3s ease;
-          }
-          .logo-hero-box:hover {
-            animation: logoPulse 1.5s ease-in-out infinite;
-            box-shadow: 0 0 60px rgba(0,240,255,0.7), 0 0 120px rgba(0,240,255,0.3);
-          }
-          @media (min-width: 640px) {
-            .logo-hero-box {
-              width: 224px;
-              height: 224px;
-            }
-          }
-          @media (min-width: 1024px) {
-            .logo-hero-box {
-              width: 272px;
-              height: 272px;
-            }
-          }
-          @keyframes logoPulse {
-            0%, 100% { box-shadow: 0 0 60px rgba(0,240,255,0.65), 0 0 120px rgba(0,240,255,0.25); }
-            50% { box-shadow: 0 0 90px rgba(0,240,255,0.9), 0 0 160px rgba(0,240,255,0.45); }
-          }
-          .kw-cyan {
-            color: #00f0ff;
-            cursor: default;
-          }
-          .kw-purple {
-            color: #a855f7;
-            cursor: default;
-          }
-          @keyframes cardPulseCyan {
-            0%, 100% { box-shadow: 0 0 20px rgba(0,240,255,0.15); }
-            50% { box-shadow: 0 0 35px rgba(0,240,255,0.3); }
-          }
-          @keyframes cardPulsePurple {
-            0%, 100% { box-shadow: 0 0 20px rgba(168,85,247,0.15); }
-            50% { box-shadow: 0 0 35px rgba(168,85,247,0.3); }
-          }
-          .stat-card-cyan {
-            background: #111111;
-            border: 1px solid rgba(0,240,255,0.35);
-            box-shadow: 0 0 20px rgba(0,240,255,0.15);
-            border-radius: 12px;
-            padding: 1.5rem;
-            text-align: center;
-            transition: transform 0.3s ease;
-          }
-          .stat-card-cyan:hover {
-            transform: translateY(-5px);
-            animation: cardPulseCyan 1.8s ease-in-out infinite;
-          }
-          .stat-card-purple {
-            background: #111111;
-            border: 1px solid rgba(168,85,247,0.35);
-            box-shadow: 0 0 20px rgba(168,85,247,0.15);
-            border-radius: 12px;
-            padding: 1.5rem;
-            text-align: center;
-            transition: transform 0.3s ease;
-          }
-          .stat-card-purple:hover {
-            transform: translateY(-5px);
-            animation: cardPulsePurple 1.8s ease-in-out infinite;
-          }
-        `}</style>
-
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="glass-card p-8 sm:p-12"
+          className="glass-card p-6 sm:p-10 lg:p-12"
         >
           <div className="flex items-center gap-3 mb-6">
             <Radio size={20} style={{ color: "#a855f7" }} />
@@ -334,7 +395,6 @@ export default function Home() {
             </h2>
           </div>
 
-          {/* ---- New About paragraphs with fade-in ---- */}
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
@@ -374,12 +434,11 @@ export default function Home() {
               RX-focused side of radio!
             </p>
 
-            {/* CTA button */}
             <div className="pt-2">
               <motion.button
                 type="button"
                 onClick={() => navigate({ to: "/equipment-reviews" as const })}
-                className="btn-neon-cyan text-sm px-6 py-2.5"
+                className="btn-neon-cyan text-sm px-6 py-2.5 w-full sm:w-auto"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.97 }}
                 data-ocid="home.guides_button"
@@ -389,9 +448,8 @@ export default function Home() {
             </div>
           </motion.div>
 
-          {/* ======= STAT CARDS ======= */}
+          {/* STAT CARDS */}
           <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {/* VIDEOS card */}
             <div
               ref={videoRef}
               className="stat-card-cyan"
@@ -417,7 +475,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* GUIDES card */}
             <div
               ref={guideRef}
               className="stat-card-purple"
@@ -446,7 +503,7 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* ========= FEATURED IMAGES CAROUSEL ========= */}
+      {/* ========= FEATURED IMAGES ========= */}
       <section
         className="max-w-7xl mx-auto px-4 pb-24"
         data-ocid="home.section"
@@ -491,7 +548,6 @@ export default function Home() {
           )}
         </motion.div>
 
-        {/* Desktop: grid of cards */}
         <div className="hidden md:grid grid-cols-3 gap-5">
           {featuredImages.map((img, i) => (
             <ImageCard
@@ -503,7 +559,6 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Mobile: single active card */}
         <div className="md:hidden">
           <motion.div
             key={activeSlide}
@@ -574,7 +629,7 @@ function ImageCard({
           className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
         />
       </div>
-      <div className="p-5">
+      <div className="p-5 sm:p-6">
         <h3
           className="font-display font-semibold text-base mb-2"
           style={{ color: "#e0e0e0" }}

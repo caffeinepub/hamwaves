@@ -48,7 +48,7 @@ export default function BestAntennasMods() {
       {/* Hero */}
       <section
         className="relative flex flex-col items-center justify-center overflow-hidden"
-        style={{ minHeight: "60vh" }}
+        style={{ paddingBottom: "3rem" }}
       >
         <RadioWavesBg />
         <div
@@ -81,6 +81,34 @@ export default function BestAntennasMods() {
             UV-K5(8)/UV-K1.
           </motion.p>
         </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+          style={{
+            width: "100%",
+            maxWidth: "900px",
+            margin: "2rem auto 0",
+            borderRadius: "12px",
+            overflow: "hidden",
+            border: "1.5px solid rgba(0,240,255,0.35)",
+            boxShadow:
+              "0 0 24px rgba(0,240,255,0.15), 0 0 60px rgba(0,240,255,0.07)",
+          }}
+        >
+          <img
+            src="/assets/generated/hero-antennas.dim_1200x500.jpg"
+            alt="Best antennas and mods for UV-K5 hero"
+            style={{
+              width: "100%",
+              height: "auto",
+              display: "block",
+              objectFit: "cover",
+              objectPosition: "center",
+            }}
+            loading="eager"
+          />
+        </motion.div>
       </section>
 
       {/* Content */}
@@ -829,13 +857,7 @@ export default function BestAntennasMods() {
           </div>
 
           {/* Subscribe CTA */}
-          <div className="text-center">
-            <h3 className="font-display font-black text-2xl sm:text-3xl mb-2">
-              Subscribe to HamWaves for more gear upgrades!
-            </h3>
-            <p className="text-sm mb-6" style={{ color: "#606060" }}>
-              New antenna builds, UV-K5 mods, and field ops on YouTube weekly.
-            </p>
+          <div className="text-center mt-10">
             <a
               href="https://www.youtube.com/@dmtoozer"
               target="_blank"

@@ -129,7 +129,7 @@ export default function ChirpProgrammingGuide() {
       {/* Hero */}
       <section
         className="relative flex flex-col items-center justify-center overflow-hidden"
-        style={{ minHeight: "60vh" }}
+        style={{ paddingBottom: "3rem" }}
       >
         <RadioWavesBg />
         <div
@@ -139,7 +139,7 @@ export default function ChirpProgrammingGuide() {
               "radial-gradient(ellipse 80% 60% at 50% 70%, rgba(0,240,255,0.06) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 50% 90%, rgba(168,85,247,0.08) 0%, transparent 60%)",
           }}
         />
-        <div className="relative z-10 flex flex-col items-center text-center px-4 max-w-3xl">
+        <div className="relative z-10 flex flex-col items-center text-center px-4 max-w-3xl pt-28 sm:pt-32">
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -161,6 +161,34 @@ export default function ChirpProgrammingGuide() {
             more. Perfect for new hams!
           </motion.p>
         </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+          style={{
+            width: "100%",
+            maxWidth: "900px",
+            margin: "2rem auto 0",
+            borderRadius: "12px",
+            overflow: "hidden",
+            border: "1.5px solid rgba(0,240,255,0.35)",
+            boxShadow:
+              "0 0 24px rgba(0,240,255,0.15), 0 0 60px rgba(0,240,255,0.07)",
+          }}
+        >
+          <img
+            src="/assets/generated/hero-chirp.dim_1200x500.jpg"
+            alt="CHIRP programming guide hero"
+            style={{
+              width: "100%",
+              height: "auto",
+              display: "block",
+              objectFit: "cover",
+              objectPosition: "center",
+            }}
+            loading="eager"
+          />
+        </motion.div>
       </section>
 
       {/* Content */}

@@ -32,12 +32,6 @@ const cons = [
   "TX power drops at high duty cycle",
 ];
 
-const comingSoon = [
-  { title: "CHIRP Programming Masterclass for Beginners" },
-  { title: "Best Antennas & Mods for the UV-K5" },
-  { title: "Quansheng UV-K6 SSB Mod Guide" },
-];
-
 const flashSteps: Array<{ id: string; content: React.ReactNode }> = [
   {
     id: "step-1",
@@ -97,7 +91,7 @@ export default function QuanshengUVK5Review() {
       {/* Hero */}
       <section
         className="relative flex flex-col items-center justify-center overflow-hidden"
-        style={{ minHeight: "60vh" }}
+        style={{ paddingBottom: "3rem" }}
       >
         <RadioWavesBg />
         <div
@@ -107,7 +101,7 @@ export default function QuanshengUVK5Review() {
               "radial-gradient(ellipse 80% 60% at 50% 70%, rgba(0,240,255,0.06) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 50% 90%, rgba(168,85,247,0.08) 0%, transparent 60%)",
           }}
         />
-        <div className="relative z-10 flex flex-col items-center text-center px-4">
+        <div className="relative z-10 flex flex-col items-center text-center px-4 pt-28 sm:pt-32">
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -126,6 +120,34 @@ export default function QuanshengUVK5Review() {
             The Ultimate Hackable Budget Ham Radio
           </motion.p>
         </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+          style={{
+            width: "100%",
+            maxWidth: "900px",
+            margin: "2rem auto 0",
+            borderRadius: "12px",
+            overflow: "hidden",
+            border: "1.5px solid rgba(0,240,255,0.35)",
+            boxShadow:
+              "0 0 24px rgba(0,240,255,0.15), 0 0 60px rgba(0,240,255,0.07)",
+          }}
+        >
+          <img
+            src="/assets/generated/hero-uvk5.dim_1200x500.jpg"
+            alt="Quansheng UV-K5 radio review hero"
+            style={{
+              width: "100%",
+              height: "auto",
+              display: "block",
+              objectFit: "cover",
+              objectPosition: "center",
+            }}
+            loading="eager"
+          />
+        </motion.div>
       </section>
 
       {/* Content */}
@@ -636,70 +658,6 @@ export default function QuanshengUVK5Review() {
               Watch on YouTube →
             </motion.span>
           </a>
-        </motion.div>
-
-        {/* More Coming Soon */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="mt-16"
-        >
-          <div className="flex items-center gap-3 mb-6">
-            <h2
-              className="font-display font-bold text-xl"
-              style={{ color: "#505050" }}
-            >
-              More Coming Soon
-            </h2>
-            <div
-              className="flex-1 h-px"
-              style={{
-                background:
-                  "linear-gradient(to right, rgba(255,255,255,0.08), transparent)",
-              }}
-            />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {comingSoon.map((card, i) => (
-              <motion.div
-                key={card.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: i * 0.08 }}
-                className="glass-card overflow-hidden flex flex-col"
-                style={{ opacity: 0.45 }}
-                data-ocid={`uv_k5_review.item.${i + 1}`}
-              >
-                <div
-                  className="flex items-center justify-center"
-                  style={{ aspectRatio: "16/9", background: "#111111" }}
-                >
-                  <Radio size={32} style={{ color: "#404040" }} />
-                </div>
-                <div className="p-4 flex flex-col gap-2">
-                  <span
-                    className="text-xs px-2 py-0.5 rounded-full font-semibold self-start"
-                    style={{
-                      background: "rgba(168,85,247,0.15)",
-                      color: "#a855f7",
-                      border: "1px solid rgba(168,85,247,0.3)",
-                    }}
-                  >
-                    Coming Soon
-                  </span>
-                  <h3
-                    className="font-display font-bold text-sm leading-snug"
-                    style={{ color: "#707070" }}
-                  >
-                    {card.title}
-                  </h3>
-                </div>
-              </motion.div>
-            ))}
-          </div>
         </motion.div>
       </section>
     </motion.div>

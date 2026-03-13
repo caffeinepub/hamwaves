@@ -84,7 +84,7 @@ export default function SatelliteScanningAntennas() {
       {/* Hero */}
       <section
         className="relative flex flex-col items-center justify-center overflow-hidden"
-        style={{ minHeight: "65vh" }}
+        style={{ paddingBottom: "3rem" }}
       >
         <RadioWavesBg />
         {/* Satellite orbit overlay */}
@@ -163,6 +163,34 @@ export default function SatelliteScanningAntennas() {
             &amp; space signals. No license needed!
           </motion.p>
         </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+          style={{
+            width: "100%",
+            maxWidth: "900px",
+            margin: "2rem auto 0",
+            borderRadius: "12px",
+            overflow: "hidden",
+            border: "1.5px solid rgba(0,240,255,0.35)",
+            boxShadow:
+              "0 0 24px rgba(0,240,255,0.15), 0 0 60px rgba(0,240,255,0.07)",
+          }}
+        >
+          <img
+            src="/assets/generated/hero-satellite.dim_1200x500.jpg"
+            alt="Satellite scanning antennas hero"
+            style={{
+              width: "100%",
+              height: "auto",
+              display: "block",
+              objectFit: "cover",
+              objectPosition: "center",
+            }}
+            loading="eager"
+          />
+        </motion.div>
       </section>
 
       {/* Content */}
