@@ -46,4 +46,9 @@ export const activeGuides = [
       "Satellite & Scanning: Best Antennas for Receiving Ham Radio Satellites 2026",
     href: "/equipment-reviews/satellite-scanning-antennas",
   },
+  {
+    title:
+      "Live Screen Mirror Your Quansheng UV-K5 in Browser (WebSerial + Canvas)",
+    href: "/equipment-reviews/uv-k5-live-mirror",
+  },
 ];

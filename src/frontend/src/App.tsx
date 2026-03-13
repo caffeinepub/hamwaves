@@ -16,6 +16,7 @@ import Home from "./pages/Home";
 import Links from "./pages/Links";
 import QuanshengUVK5Review from "./pages/QuanshengUVK5Review";
 import SatelliteScanningAntennas from "./pages/SatelliteScanningAntennas";
+import UVK5LiveMirror from "./pages/UVK5LiveMirror";
 import Videos from "./pages/Videos";
 
 const rootRoute = createRootRoute({
@@ -86,6 +87,12 @@ const satelliteScanningAntennasRoute = createRoute({
   component: SatelliteScanningAntennas,
 });
 
+const uvk5LiveMirrorRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/equipment-reviews/uv-k5-live-mirror",
+  component: UVK5LiveMirror,
+});
+
 const routeTree = rootRoute.addChildren([
   homeRoute,
   videosRoute,
@@ -96,6 +103,7 @@ const routeTree = rootRoute.addChildren([
   bestAntennasModsRoute,
   bestBudgetHandheldsRoute,
   satelliteScanningAntennasRoute,
+  uvk5LiveMirrorRoute,
 ]);
 
 const router = createRouter({ routeTree });

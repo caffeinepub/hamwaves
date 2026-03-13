@@ -659,6 +659,48 @@ export default function QuanshengUVK5Review() {
             </motion.span>
           </a>
         </motion.div>
+
+        {/* Live Mirror CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="mt-8 text-center"
+          style={{
+            background: "linear-gradient(135deg, #00f0ff11, #a855f711)",
+            border: "1.5px solid #00f0ff44",
+            borderRadius: "16px",
+            padding: "32px 24px",
+          }}
+        >
+          <p className="text-xs font-mono mb-2" style={{ color: "#00f0ff88" }}>
+            ✦ INTERACTIVE TOOL
+          </p>
+          <h2
+            className="font-display font-black text-xl sm:text-2xl mb-2"
+            style={{ color: "#00f0ff" }}
+          >
+            Try Live Screen Mirror
+          </h2>
+          <p className="text-sm mb-5" style={{ color: "#909090" }}>
+            Mirror your UV-K5 LCD live in the browser using Web Serial API +
+            F4HWN firmware – no software install needed.
+          </p>
+          <Link to="/equipment-reviews/uv-k5-live-mirror">
+            <motion.span
+              className="btn-neon-cyan text-base px-8 py-3 inline-flex items-center gap-2"
+              whileHover={{
+                scale: 1.05,
+                boxShadow: "0 0 24px rgba(0,240,255,0.4)",
+              }}
+              whileTap={{ scale: 0.97 }}
+              data-ocid="uv_k5_review.live_mirror.primary_button"
+            >
+              Try Live Screen Mirror →
+            </motion.span>
+          </Link>
+        </motion.div>
       </section>
     </motion.div>
   );
