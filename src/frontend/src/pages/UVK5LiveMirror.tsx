@@ -331,7 +331,7 @@ export default function UVK5LiveMirror() {
       for (let x = 0; x < 128; x++) {
         const bitIndex = y * 128 + x;
         const byteIdx = Math.floor(bitIndex / 8);
-        const bitPos = 7 - (bitIndex % 8);
+        const bitPos = bitIndex % 8; // LSB-first, matches Python K5Viewer get_bit()
         if (fb[byteIdx] & (1 << bitPos)) {
           ctx.fillRect(x * pw, y * pw, pw - 1, pw - 1);
         }
