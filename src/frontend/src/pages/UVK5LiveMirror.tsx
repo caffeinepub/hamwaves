@@ -1,3 +1,8 @@
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): void;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
 declare global {
   interface Navigator {
     serial: {
@@ -269,6 +274,8 @@ export default function UVK5LiveMirror() {
   const [fps, setFps] = useState(0);
   const [reconnectCountdown, setReconnectCountdown] = useState(0);
   const [errorMsg, setErrorMsg] = useState("");
+  const [installPrompt, setInstallPrompt] = useState<Event | null>(null);
+  const [_swRegistered, setSwRegistered] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scanlineCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -343,7 +350,23 @@ export default function UVK5LiveMirror() {
 
   // ── Draw Scanlines (opacity 0.08) ─────────────────────────────────────────
   // Clear stale flip preferences so permanent orientation fix always applies
-  useEffect(() => {}, []);
+  // ── PWA: Service Worker + Install Prompt ─────────────────────────────────
+  useEffect(() => {
+    // Register service worker
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/sw.js")
+        .then(() => setSwRegistered(true))
+        .catch(() => {});
+    }
+    // Listen for PWA install prompt
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
 
   useEffect(() => {
     const canvas = scanlineCanvasRef.current;
@@ -988,6 +1011,31 @@ export default function UVK5LiveMirror() {
             {lang === "fr" ? "Capture" : "Screenshot"}
           </button>
 
+          {/* Install PWA button */}
+          {installPrompt && (
+            <button
+              type="button"
+              onClick={async () => {
+                const prompt = installPrompt as BeforeInstallPromptEvent;
+                prompt.prompt();
+                await prompt.userChoice;
+                setInstallPrompt(null);
+              }}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-semibold transition-all"
+              style={{
+                borderColor: "#00f0ff",
+                color: "#00f0ff",
+                background: "rgba(0,240,255,0.08)",
+                boxShadow: "0 0 12px rgba(0,240,255,0.3)",
+                animation: "neonPulse 2s infinite",
+              }}
+              data-ocid="mirror.install_button"
+            >
+              <span style={{ fontSize: "1rem" }}>⬇</span>
+              Install as App
+            </button>
+          )}
+
           {/* Status badge – right side */}
           <div
             className="ml-auto flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-mono whitespace-nowrap"
@@ -1380,6 +1428,10 @@ export default function UVK5LiveMirror() {
         @keyframes blink {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.3; }
+        }
+        @keyframes neonPulse {
+          0%, 100% { box-shadow: 0 0 12px rgba(0,240,255,0.3); }
+          50% { box-shadow: 0 0 24px rgba(0,240,255,0.7), 0 0 40px rgba(0,240,255,0.3); }
         }
       `}</style>
     </div>

@@ -1,0 +1,22 @@
+{
+  "name": "HamWaves UV-K5 / UV-K1 Viewer",
+  "short_name": "UV-K5 Viewer",
+  "description": "Live LCD mirror and remote control for Quansheng UV-K5 / UV-K1 V3 via WebSerial and F4HWN Fusion firmware.",
+  "start_url": "/equipment-reviews/uv-k5-live-mirror",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#00f0ff",
+  "orientation": "landscape-primary",
+  "icons": [
+    {
+      "src": "/assets/generated/pwa-icon-192.dim_192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/generated/pwa-icon-512-transparent.dim_512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
