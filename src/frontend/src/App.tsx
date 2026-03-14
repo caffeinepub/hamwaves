@@ -4,6 +4,7 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  useRouterState,
 } from "@tanstack/react-router";
 import { AnimatePresence } from "motion/react";
 import Footer from "./components/Footer";
@@ -17,10 +18,18 @@ import Links from "./pages/Links";
 import QuanshengUVK5Review from "./pages/QuanshengUVK5Review";
 import SatelliteScanningAntennas from "./pages/SatelliteScanningAntennas";
 import UVK5LiveMirror from "./pages/UVK5LiveMirror";
+import UVK5ViewerPage from "./pages/UVK5ViewerPage";
 import Videos from "./pages/Videos";
 
-const rootRoute = createRootRoute({
-  component: () => (
+function RootLayout() {
+  const { location } = useRouterState();
+  const isStandalone = location.pathname === "/uv-k5-viewer";
+
+  if (isStandalone) {
+    return <Outlet />;
+  }
+
+  return (
     <div
       style={{ background: "#0a0a0a", minHeight: "100vh", color: "#e0e0e0" }}
     >
@@ -30,7 +39,11 @@ const rootRoute = createRootRoute({
       </AnimatePresence>
       <Footer />
     </div>
-  ),
+  );
+}
+
+const rootRoute = createRootRoute({
+  component: RootLayout,
 });
 
 const homeRoute = createRoute({
@@ -93,6 +106,12 @@ const uvk5LiveMirrorRoute = createRoute({
   component: UVK5LiveMirror,
 });
 
+const uvk5ViewerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/uv-k5-viewer",
+  component: UVK5ViewerPage,
+});
+
 const routeTree = rootRoute.addChildren([
   homeRoute,
   videosRoute,
@@ -104,6 +123,7 @@ const routeTree = rootRoute.addChildren([
   bestBudgetHandheldsRoute,
   satelliteScanningAntennasRoute,
   uvk5LiveMirrorRoute,
+  uvk5ViewerRoute,
 ]);
 
 const router = createRouter({ routeTree });

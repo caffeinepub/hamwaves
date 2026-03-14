@@ -1,44 +1,30 @@
-# HamWaves – UV-K5 Live Mirror Elite Upgrade
+# HamWaves – UV-K5 Standalone PWA Viewer
 
 ## Current State
-The page at `/equipment-reviews/uv-k5-live-mirror` (`UVK5LiveMirror.tsx`) exists with a basic WebSerial + Canvas viewer: 8× pixel scale, 4 color themes, AA55 frame parser (type 01 full / 02 diff), FPS display, screenshot, zoom +/-, invert, disconnect. Single-column layout. No keypad overlay, no model selector, no auto-reconnect, no language toggle, no glassmorphism control bar.
+- `/equipment-reviews/uv-k5-live-mirror` contains the full WebSerial + Canvas viewer (UVK5LiveMirror.tsx, ~1439 lines) with all protocol logic, keypad, remote control, themes, and PWA install prompt.
+- Site uses a single TanStack Router rootRoute that always wraps every page with `<Navbar />` and `<Footer />`.
+- `/manifest.json` and `/sw.js` exist, pointing to the equipment-reviews mirror page as the PWA start_url.
+- PWA icons (192×192, 512×512) already generated in `/assets/generated/`.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Model selector (UV-K5 / UV-K1 V3) as radio buttons above canvas
-- Top control bar (glassmorphism, dark navy): Connect / Disconnect / Keypad toggle / Help modal / Language dropdown (EN/FR) / Theme selector
-- Right-side keypad overlay panel: realistic radio button grid (PTT, MENU, EXIT, arrows, 0-9, *, #, F1/F2, A/B) – visual only with hover glow; on mobile stacks below canvas
-- Status badge top-right: READY / Connecting / Connected–F4HWN vX.X / Reconnecting / Error states with coloured dot
-- Auto-reconnect logic: retry every 3s on disconnect, up to 5 attempts
-- LCD emulation upgrades: blue backlit background (#0a1628), scanline overlay, subtle outer glow/shine on canvas container
-- Scale increased to default 10× (range 8–16×)
-- Language toggle (EN/FR) changes UI labels
-- Help modal explaining requirements and protocol
-- Updated SEO title/meta for UV-K5 & UV-K1 V3
-- Updated page H1/subtitle to cover both radios + F4HWN firmware
-- Mobile warning for USB OTG
+- New route `/uv-k5-viewer` rendering `UVK5ViewerPage` (standalone, no nav/footer chrome).
+- `UVK5ViewerPage.tsx` — full viewer (canvas, connect, keypad, remote control, FPS, themes, v5.2.0 protocol) in a compact full-viewport layout with no site chrome.
+- `/viewer-manifest.json` — separate PWA manifest with `name: "HamWaves UV-K5 Viewer"`, `short_name: "UV-K5 Mirror"`, `start_url: "/uv-k5-viewer"`, new viewer icons.
+- `/viewer-sw.js` — service worker scoped to viewer assets only, offline fallback message.
+- Viewer-specific PWA icons (192×192, 512×512) with neon cyan glow walkie-talkie.
+- "Install Viewer App" neon cyan button using `beforeinstallprompt`.
 
 ### Modify
-- Canvas default scale: 8× → 10× (desktop), responsive max-width
-- Theme: add 'Invert' as a named theme option in the control bar selector
-- Status area: more descriptive labels including firmware version placeholder
-- Instructions section: updated to cover UV-K1 V3 as well
-- Control layout: horizontal top bar (glassmorphism) instead of stacked rows
-- Frame parser: keep AA55 + type 01/02 logic; add firmware version sniff from special frame type 0x03 if present
+- `App.tsx` — make rootRoute component conditionally hide Navbar and Footer when `pathname === '/uv-k5-viewer'`.
+- `UVK5ViewerPage` registers `/viewer-sw.js` (not `/sw.js`) and swaps `<link rel="manifest">` to `/viewer-manifest.json` via DOM manipulation in useEffect.
 
 ### Remove
-- Old stacked control rows (replace with top bar + right panel)
-- Old simple status row (replaced by top-right badge)
+- Nothing removed from existing pages.
 
 ## Implementation Plan
-1. Rewrite `UVK5LiveMirror.tsx` entirely with the elite viewer layout
-2. Top bar: glassmorphism strip with all controls in one row, wraps on mobile
-3. Canvas section: side-by-side with keypad overlay on desktop; stacked on mobile
-4. LCD canvas: blue backlit bg, scanline CSS overlay, outer glow box-shadow
-5. Keypad overlay component: grid of styled buttons, visual-only, hover glow
-6. Status badge: absolute-positioned top-right of control bar
-7. Auto-reconnect: useRef counter + setTimeout loop
-8. Language state: EN/FR labels object, dropdown in top bar
-9. Help modal: Dialog component with requirements list
-10. Update SEO meta tags for both radio models
+1. Generate viewer PWA icons (192×192, 512×512).
+2. Write `/viewer-manifest.json` and `/viewer-sw.js` to public.
+3. Create `UVK5ViewerPage.tsx` — compact full-viewport layout, all viewer logic, registers viewer-sw.js, swaps manifest, Install Viewer App button.
+4. Update `App.tsx` — add `/uv-k5-viewer` route, hide Navbar/Footer on that route via `useRouterState`.
