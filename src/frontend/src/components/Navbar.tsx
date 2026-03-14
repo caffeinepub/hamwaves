@@ -9,6 +9,47 @@ const navLinks = [
   { label: "Links", path: "/links" },
 ];
 
+function MirrorButton({
+  className = "",
+  style = {},
+}: { className?: string; style?: React.CSSProperties }) {
+  return (
+    <a
+      href="/uv-k5-viewer"
+      target="_blank"
+      rel="noopener noreferrer"
+      data-ocid="nav.mirror_button"
+      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold tracking-wide transition-all duration-200 select-none ${className}`}
+      style={{
+        color: "#fff",
+        background: "rgba(0,240,255,0.15)",
+        border: "1.5px solid #00f0ff",
+        boxShadow:
+          "0 0 10px rgba(0,240,255,0.35), inset 0 0 8px rgba(0,240,255,0.08)",
+        fontFamily: "Inter, sans-serif",
+        ...style,
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLAnchorElement).style.transform = "scale(1.05)";
+        (e.currentTarget as HTMLAnchorElement).style.boxShadow =
+          "0 0 18px rgba(0,240,255,0.7), 0 0 6px rgba(0,240,255,0.4), inset 0 0 12px rgba(0,240,255,0.15)";
+        (e.currentTarget as HTMLAnchorElement).style.background =
+          "rgba(0,240,255,0.25)";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLAnchorElement).style.transform = "scale(1)";
+        (e.currentTarget as HTMLAnchorElement).style.boxShadow =
+          "0 0 10px rgba(0,240,255,0.35), inset 0 0 8px rgba(0,240,255,0.08)";
+        (e.currentTarget as HTMLAnchorElement).style.background =
+          "rgba(0,240,255,0.15)";
+      }}
+    >
+      <span style={{ fontSize: "0.85em" }}>📡</span>
+      Mirror UV-K5/K1 (V3)
+    </a>
+  );
+}
+
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -21,7 +62,6 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Close menu on route change - currentPath is the trigger, setMenuOpen is stable
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional - only re-run when path changes
   useEffect(() => {
     setMenuOpen(false);
@@ -63,8 +103,8 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Desktop Nav – centred slot */}
-          <nav className="hidden md:flex items-center gap-8">
+          {/* Desktop Nav */}
+          <nav className="hidden md:flex items-center gap-6">
             {navLinks.map((link) => {
               const isActive = currentPath === link.path;
               return (
@@ -92,9 +132,10 @@ export default function Navbar() {
                 </Link>
               );
             })}
+            <MirrorButton />
           </nav>
 
-          {/* Right slot – keeps layout balanced on desktop, hamburger on mobile */}
+          {/* Right slot – hamburger on mobile */}
           <div className="flex-1 flex justify-end">
             <button
               type="button"
@@ -181,6 +222,16 @@ export default function Navbar() {
                     </motion.div>
                   );
                 })}
+
+                {/* Mirror button in mobile menu */}
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: navLinks.length * 0.07 }}
+                  className="pt-2"
+                >
+                  <MirrorButton className="w-full justify-center py-3 text-base" />
+                </motion.div>
               </div>
             </motion.nav>
           </>
