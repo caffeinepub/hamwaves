@@ -701,6 +701,51 @@ export default function QuanshengUVK5Review() {
             </motion.span>
           </Link>
         </motion.div>
+        {/* Standalone Viewer App CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="mt-6 text-center"
+          style={{
+            background: "linear-gradient(135deg, #00f0ff0d, #00f0ff05)",
+            border: "2px solid #00f0ff",
+            borderRadius: "16px",
+            padding: "28px 24px",
+            boxShadow: "0 0 24px rgba(0,240,255,0.15)",
+          }}
+        >
+          <p className="text-xs font-mono mb-2" style={{ color: "#00f0ff88" }}>
+            ✦ INSTALL AS APP
+          </p>
+          <h2
+            className="font-display font-black text-xl sm:text-2xl mb-2"
+            style={{
+              color: "#00f0ff",
+              textShadow: "0 0 16px rgba(0,240,255,0.5)",
+            }}
+          >
+            UV-K5 Viewer – Standalone App
+          </h2>
+          <p className="text-sm mb-5" style={{ color: "#909090" }}>
+            Open the dedicated viewer as a standalone PWA you can install to
+            your desktop or home screen – no browser tabs, always ready.
+          </p>
+          <Link to="/uv-k5-viewer">
+            <motion.span
+              className="btn-neon-cyan text-base px-8 py-3 inline-flex items-center gap-2"
+              whileHover={{
+                scale: 1.05,
+                boxShadow: "0 0 32px rgba(0,240,255,0.55)",
+              }}
+              whileTap={{ scale: 0.97 }}
+              data-ocid="uv_k5_review.open_viewer_app.primary_button"
+            >
+              Open Live Viewer App →
+            </motion.span>
+          </Link>
+        </motion.div>
       </section>
     </motion.div>
   );

@@ -108,3 +108,13 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+// appinstalled event – log and notify clients
+self.addEventListener('appinstalled', () => {
+  console.log('Viewer PWA installed');
+  self.clients.matchAll({ type: 'window' }).then((clients) => {
+    clients.forEach((client) => {
+      client.postMessage({ type: 'VIEWER_PWA_INSTALLED' });
+    });
+  });
+});

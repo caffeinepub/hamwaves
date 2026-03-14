@@ -255,6 +255,8 @@ export default function UVK5ViewerPage() {
   const [reconnectCountdown, setReconnectCountdown] = useState(0);
   const [errorMsg, setErrorMsg] = useState("");
   const [installPrompt, setInstallPrompt] = useState<Event | null>(null);
+  const [isPWA, setIsPWA] = useState(false);
+  const [showInstalledToast, setShowInstalledToast] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scanlineCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -307,6 +309,12 @@ export default function UVK5ViewerPage() {
     // Register viewer service worker
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/viewer-sw.js").catch(() => {});
+      navigator.serviceWorker.addEventListener("message", (e) => {
+        if (e.data?.type === "VIEWER_PWA_INSTALLED") {
+          setShowInstalledToast(true);
+          setTimeout(() => setShowInstalledToast(false), 4000);
+        }
+      });
     }
 
     // Install prompt
@@ -316,10 +324,28 @@ export default function UVK5ViewerPage() {
     };
     window.addEventListener("beforeinstallprompt", handler);
 
+    // Detect standalone/PWA mode
+    const checkPWA = () => {
+      const standalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as unknown as { standalone?: boolean }).standalone ===
+          true;
+      setIsPWA(standalone);
+    };
+    checkPWA();
+
+    // appinstalled event
+    const installedHandler = () => {
+      console.log("Viewer PWA installed");
+      setIsPWA(true);
+    };
+    window.addEventListener("appinstalled", installedHandler);
+
     return () => {
       if (manifestLink && prevHref) manifestLink.href = prevHref;
       if (themeMeta && prevTheme) themeMeta.content = prevTheme;
       window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("appinstalled", installedHandler);
     };
   }, []);
 
@@ -614,6 +640,36 @@ export default function UVK5ViewerPage() {
         @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
         @keyframes neonPulse { 0%,100% { box-shadow: 0 0 10px #00f0ff55; } 50% { box-shadow: 0 0 20px #00f0ffaa, 0 0 40px #00f0ff44; } }
       `}</style>
+
+      {/* ── Installed Toast ─────────────────────────────────────────────── */}
+      {showInstalledToast && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 24,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 9999,
+            background: "rgba(0,20,20,0.97)",
+            border: "1.5px solid #00f0ff",
+            borderRadius: 12,
+            padding: "14px 28px",
+            color: "#00f0ff",
+            fontWeight: 700,
+            fontSize: "0.9rem",
+            boxShadow: "0 0 32px rgba(0,240,255,0.4)",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+          }}
+          data-ocid="viewer.installed_toast.toast"
+        >
+          <Radio size={16} />
+          {lang === "fr"
+            ? "Merci d'avoir installé l'app UV-K5 Viewer !"
+            : "Thanks for installing UV-K5 Viewer!"}
+        </div>
+      )}
 
       {/* ── Top Bar ─────────────────────────────────────────────────────── */}
       <div
@@ -921,8 +977,30 @@ export default function UVK5ViewerPage() {
           {lang === "fr" ? "Capture" : "Screenshot"}
         </button>
 
+        {/* Installed as App badge – shown when running as PWA */}
+        {isPWA && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "6px 12px",
+              borderRadius: 8,
+              border: "1px solid rgba(0,240,255,0.6)",
+              color: "#00f0ff",
+              background: "rgba(0,240,255,0.08)",
+              fontSize: "0.72rem",
+              fontWeight: 700,
+            }}
+            data-ocid="viewer.installed_as_app.success_state"
+          >
+            <Radio size={12} />
+            {lang === "fr" ? "Installé comme app" : "Installed as App"}
+          </div>
+        )}
+
         {/* Install Viewer App */}
-        {installPrompt && (
+        {!isPWA && installPrompt && (
           <button
             type="button"
             onClick={async () => {
