@@ -64,30 +64,58 @@ const THEMES: Record<ThemeName, ThemeColors> = {
   Invert: { fg: "#00f0ff", bg: "#000000", glow: false },
 };
 
-const KEY_CODES: Record<string, number> = {
+// Key codes for UV-K5 (F4HWN Fusion v5.2.0)
+const KEY_CODES_UVK5: Record<string, number> = {
   PTT: 0x01,
   MENU: 0x02,
-  UP: 0x03,
-  DOWN: 0x04,
-  LEFT: 0x05,
-  RIGHT: 0x06,
+  "A/B": 0x03,
+  UP: 0x04,
+  DOWN: 0x05,
+  EXIT: 0x06,
+  BAND: 0x07,
+  LEFT: 0x08,
+  RIGHT: 0x09,
+  "V/M": 0x0a,
+  "0": 0x10,
+  "1": 0x11,
+  "2": 0x12,
+  "3": 0x13,
+  "4": 0x14,
+  "5": 0x15,
+  "6": 0x16,
+  "7": 0x17,
+  "8": 0x18,
+  "9": 0x19,
+  "*": 0x1a,
+  "#": 0x1b,
+  F1: 0x1c,
+  F2: 0x1d,
+  CALL: 0x07,
+};
+
+// Key codes for UV-K1 (F4HWN Fusion v5.2.0)
+const KEY_CODES_UVK1: Record<string, number> = {
+  PTT: 0x01,
+  MENU: 0x02,
+  LEFT: 0x03,
+  RIGHT: 0x04,
   EXIT: 0x07,
-  F1: 0x08,
-  F2: 0x09,
-  "0": 0x0a,
-  "1": 0x0b,
-  "2": 0x0c,
-  "3": 0x0d,
-  "4": 0x0e,
-  "5": 0x0f,
-  "6": 0x10,
-  "7": 0x11,
-  "8": 0x12,
-  "9": 0x13,
-  "*": 0x14,
-  "#": 0x15,
-  "A/B": 0x16,
-  CALL: 0x17,
+  BAND: 0x09,
+  ",.?": 0x1e,
+  "A/B": 0x08,
+  "V/M": 0x0b,
+  "SCAN *": 0x1a,
+  _: 0x1f,
+  FC: 0x0c,
+  GHI: 0x14,
+  JKL: 0x15,
+  MNO: 0x16,
+  PQRS: 0x17,
+  TUV: 0x18,
+  WXYZ: 0x19,
+  "FM 0": 0x10,
+  "LOCK #": 0x1b,
+  FUNCTION: 0x0d,
 };
 
 const KEY_LABELS_EN: Record<string, string> = {
@@ -102,6 +130,21 @@ const KEY_LABELS_EN: Record<string, string> = {
   F2: "F2",
   "A/B": "A/B",
   CALL: "CALL",
+  BAND: "BAND",
+  "V/M": "V/M",
+  ",.?": ",.?",
+  _: "_",
+  FC: "FC",
+  GHI: "GHI",
+  JKL: "JKL",
+  MNO: "MNO",
+  PQRS: "PQRS",
+  TUV: "TUV",
+  WXYZ: "WXYZ",
+  "FM 0": "FM 0",
+  "LOCK #": "LOCK #",
+  FUNCTION: "FUNC",
+  "SCAN *": "SCAN *",
 };
 
 const KEY_LABELS_FR: Record<string, string> = {
@@ -116,9 +159,25 @@ const KEY_LABELS_FR: Record<string, string> = {
   F2: "F2",
   "A/B": "A/B",
   CALL: "APPEL",
+  BAND: "BANDE",
+  "V/M": "V/M",
+  ",.?": ",.?",
+  _: "_",
+  FC: "FC",
+  GHI: "GHI",
+  JKL: "JKL",
+  MNO: "MNO",
+  PQRS: "PQRS",
+  TUV: "TUV",
+  WXYZ: "WXYZ",
+  "FM 0": "FM 0",
+  "LOCK #": "VERR #",
+  FUNCTION: "FONC",
+  "SCAN *": "SCAN *",
 };
 
-const KEYPAD_ROWS = [
+// ── UV-K5 keypad layout (3 columns) ──────────────────────────────────────────
+const KEYPAD_ROWS_UVK5 = [
   [{ id: "PTT", span: 3 }],
   [{ id: "F1" }, { id: "UP" }, { id: "F2" }],
   [{ id: "LEFT" }, { id: "MENU" }, { id: "RIGHT" }],
@@ -127,6 +186,16 @@ const KEYPAD_ROWS = [
   [{ id: "4" }, { id: "5" }, { id: "6" }],
   [{ id: "7" }, { id: "8" }, { id: "9" }],
   [{ id: "*" }, { id: "0" }, { id: "#" }],
+] as Array<Array<{ id: string; span?: number }>>;
+
+// ── UV-K1 V3 keypad layout (4 columns, matches physical layout) ───────────────
+const KEYPAD_ROWS_UVK1 = [
+  [{ id: "PTT", span: 4 }],
+  [{ id: "MENU" }, { id: "LEFT" }, { id: "RIGHT" }, { id: "EXIT" }],
+  [{ id: "BAND" }, { id: ",.?" }, { id: "A/B" }, { id: "V/M" }],
+  [{ id: "SCAN *" }, { id: "_" }, { id: "FC" }, { id: "GHI" }],
+  [{ id: "JKL" }, { id: "MNO" }, { id: "PQRS" }, { id: "TUV" }],
+  [{ id: "WXYZ" }, { id: "FM 0" }, { id: "LOCK #" }, { id: "FUNCTION" }],
 ] as Array<Array<{ id: string; span?: number }>>;
 
 const STATUS_CONFIG: Record<
@@ -169,9 +238,17 @@ interface KeypadBtnProps {
   lang: Lang;
   disabled: boolean;
   onSendKey: (keyId: string, isLong: boolean) => void;
+  codeMap: Record<string, number>;
 }
 
-function KeypadBtn({ keyId, span, lang, disabled, onSendKey }: KeypadBtnProps) {
+function KeypadBtn({
+  keyId,
+  span,
+  lang,
+  disabled,
+  onSendKey,
+  codeMap,
+}: KeypadBtnProps) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longFiredRef = useRef(false);
   const [pressed, setPressed] = useState(false);
@@ -179,13 +256,39 @@ function KeypadBtn({ keyId, span, lang, disabled, onSendKey }: KeypadBtnProps) {
   const displayLabel = labels[keyId] ?? keyId;
   const isPTT = keyId === "PTT";
   const isNav = ["UP", "DOWN", "LEFT", "RIGHT"].includes(keyId);
-  const isAccent = ["MENU", "EXIT", "F1", "F2"].includes(keyId);
-  const isDigit = /^[0-9*#]$/.test(keyId);
+  const isAccent = [
+    "MENU",
+    "EXIT",
+    "F1",
+    "F2",
+    "BAND",
+    "V/M",
+    "FC",
+    "FUNCTION",
+  ].includes(keyId);
+  const isDigit =
+    /^[0-9]$/.test(keyId) ||
+    [
+      "*",
+      "#",
+      ",.?",
+      "_",
+      "GHI",
+      "JKL",
+      "MNO",
+      "PQRS",
+      "TUV",
+      "WXYZ",
+      "FM 0",
+      "LOCK #",
+      "SCAN *",
+    ].includes(keyId);
 
   const handlePointerDown = () => {
     if (disabled) return;
     setPressed(true);
     longFiredRef.current = false;
+    onSendKey(keyId, false);
     timerRef.current = setTimeout(() => {
       longFiredRef.current = true;
       onSendKey(keyId, true);
@@ -197,7 +300,6 @@ function KeypadBtn({ keyId, span, lang, disabled, onSendKey }: KeypadBtnProps) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
-    if (!longFiredRef.current && !disabled) onSendKey(keyId, false);
   };
   const handlePointerLeave = () => {
     setPressed(false);
@@ -227,6 +329,9 @@ function KeypadBtn({ keyId, span, lang, disabled, onSendKey }: KeypadBtnProps) {
   if (pressed) baseStyle += "brightness-75 scale-95 ";
   if (disabled) baseStyle += "opacity-40 cursor-not-allowed ";
 
+  const shortCode = codeMap[keyId] ?? 0;
+  const longCode = shortCode | 0x80;
+
   return (
     <button
       type="button"
@@ -237,6 +342,7 @@ function KeypadBtn({ keyId, span, lang, disabled, onSendKey }: KeypadBtnProps) {
       onPointerLeave={handlePointerLeave}
       disabled={disabled}
       aria-label={`Key ${keyId}`}
+      title={`${keyId} · short: 0x${shortCode.toString(16).padStart(2, "0")} · long: 0x${longCode.toString(16).padStart(2, "0")}`}
     >
       {displayLabel}
     </button>
@@ -257,6 +363,7 @@ export default function UVK5ViewerPage() {
   const [installPrompt, setInstallPrompt] = useState<Event | null>(null);
   const [isPWA, setIsPWA] = useState(false);
   const [showInstalledToast, setShowInstalledToast] = useState(false);
+  const [statusMsg, setStatusMsg] = useState("");
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scanlineCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -275,14 +382,24 @@ export default function UVK5ViewerPage() {
   const fpsTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const readingRef = useRef(false);
   const statusRef = useRef<Status>("ready");
+  const modelRef = useRef<ModelName>("UV-K5");
+
+  // Keep modelRef in sync with model state
+  useEffect(() => {
+    modelRef.current = model;
+  }, [model]);
 
   const W = 128;
   const H = 64;
   const BAUD = 38400;
 
+  // Derive keypad rows, column count and code map from selected model
+  const keypadRows = model === "UV-K1 V3" ? KEYPAD_ROWS_UVK1 : KEYPAD_ROWS_UVK5;
+  const keypadCols = model === "UV-K1 V3" ? 4 : 3;
+  const activeCodeMap = model === "UV-K1 V3" ? KEY_CODES_UVK1 : KEY_CODES_UVK5;
+
   // ── Override manifest + register viewer SW ──────────────────────────────
   useEffect(() => {
-    // Swap manifest to viewer-specific one
     let manifestLink = document.querySelector(
       'link[rel="manifest"]',
     ) as HTMLLinkElement | null;
@@ -294,7 +411,6 @@ export default function UVK5ViewerPage() {
     }
     manifestLink.href = "/viewer-manifest.json";
 
-    // Update theme-color
     let themeMeta = document.querySelector(
       'meta[name="theme-color"]',
     ) as HTMLMetaElement | null;
@@ -306,7 +422,6 @@ export default function UVK5ViewerPage() {
     }
     themeMeta.content = "#00f0ff";
 
-    // Register viewer service worker
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/viewer-sw.js").catch(() => {});
       navigator.serviceWorker.addEventListener("message", (e) => {
@@ -317,14 +432,12 @@ export default function UVK5ViewerPage() {
       });
     }
 
-    // Install prompt
     const handler = (e: Event) => {
       e.preventDefault();
       setInstallPrompt(e);
     };
     window.addEventListener("beforeinstallprompt", handler);
 
-    // Detect standalone/PWA mode
     const checkPWA = () => {
       const standalone =
         window.matchMedia("(display-mode: standalone)").matches ||
@@ -334,7 +447,6 @@ export default function UVK5ViewerPage() {
     };
     checkPWA();
 
-    // appinstalled event
     const installedHandler = () => {
       console.log("Viewer PWA installed");
       setIsPWA(true);
@@ -349,9 +461,14 @@ export default function UVK5ViewerPage() {
     };
   }, []);
 
-  const setStatusSafe = useCallback((s: Status) => {
+  const setStatusSafe = useCallback((s: Status, msg = "") => {
     statusRef.current = s;
     setStatus(s);
+    if (s === "sending") {
+      setStatusMsg(msg);
+    } else {
+      setStatusMsg("");
+    }
   }, []);
 
   // ── Render Frame ─────────────────────────────────────────────────────────
@@ -580,11 +697,29 @@ export default function UVK5ViewerPage() {
   const sendKey = useCallback(
     async (keyId: string, isLong: boolean) => {
       if (!writerRef.current || statusRef.current !== "connected") return;
-      const code = KEY_CODES[keyId];
-      if (code === undefined) return;
-      const typeB = isLong ? 0x81 : 0x01;
+      const isUVK1 = modelRef.current === "UV-K1 V3";
+      const codeMap = isUVK1 ? KEY_CODES_UVK1 : KEY_CODES_UVK5;
+      const shortCode = codeMap[keyId];
+      if (shortCode === undefined) return;
+      // For UV-K1: long press sets bit 7 of the keycode; type byte is always 0x03
+      // For UV-K5: type byte toggles between 0x03 (short) and 0x81 (long)
+      let typeB: number;
+      let code: number;
+      if (isUVK1) {
+        typeB = 0x03;
+        code = isLong ? shortCode | 0x80 : shortCode;
+      } else {
+        typeB = isLong ? 0x81 : 0x03;
+        code = shortCode;
+      }
+      const pressLabel = isLong ? "long" : "short";
+      const displayLabel = KEY_LABELS_EN[keyId] ?? keyId;
+      console.log(
+        `Sending key code: 0x${code.toString(16)} (${keyId}, ${pressLabel})`,
+      );
+      const msg = `Sending ${displayLabel} ${pressLabel} press`;
       try {
-        setStatusSafe("sending");
+        setStatusSafe("sending", msg);
         await writerRef.current.write(
           new Uint8Array([0xaa, 0x55, typeB, code]),
         );
@@ -622,6 +757,13 @@ export default function UVK5ViewerPage() {
   const canvasW = W * scale;
   const canvasH = H * scale;
   const sc = STATUS_CONFIG[status];
+  // Dynamic label: show button-specific message when sending, else use config label
+  const statusLabel =
+    status === "sending" && statusMsg
+      ? statusMsg
+      : lang === "fr"
+        ? sc.frLabel
+        : sc.label;
 
   return (
     <div
@@ -857,7 +999,7 @@ export default function UVK5ViewerPage() {
           ))}
         </div>
 
-        {/* Model */}
+        {/* Model selector */}
         <div
           style={{
             display: "flex",
@@ -865,11 +1007,21 @@ export default function UVK5ViewerPage() {
             gap: 10,
             padding: "6px 10px",
             borderRadius: 8,
-            border: "1px solid rgba(0,240,255,0.2)",
-            background: "rgba(0,240,255,0.03)",
+            border: "1px solid rgba(0,240,255,0.3)",
+            background: "rgba(0,240,255,0.04)",
           }}
           data-ocid="viewer.model.radio"
         >
+          <span
+            style={{
+              fontSize: "0.6rem",
+              color: "rgba(0,240,255,0.4)",
+              fontWeight: 700,
+              letterSpacing: "0.1em",
+            }}
+          >
+            MODEL
+          </span>
           {(["UV-K5", "UV-K1 V3"] as ModelName[]).map((m) => (
             <label
               key={m}
@@ -890,9 +1042,11 @@ export default function UVK5ViewerPage() {
               />
               <span
                 style={{
-                  fontSize: "0.7rem",
-                  fontWeight: 600,
-                  color: model === m ? "#00f0ff" : "#666",
+                  fontSize: "0.72rem",
+                  fontWeight: 700,
+                  color: model === m ? "#00f0ff" : "#555",
+                  transition: "color 0.15s",
+                  textShadow: model === m ? "0 0 8px #00f0ff88" : "none",
                 }}
               >
                 {m}
@@ -977,7 +1131,7 @@ export default function UVK5ViewerPage() {
           {lang === "fr" ? "Capture" : "Screenshot"}
         </button>
 
-        {/* Installed as App badge – shown when running as PWA */}
+        {/* Installed as App badge */}
         {isPWA && (
           <div
             style={{
@@ -1062,7 +1216,7 @@ export default function UVK5ViewerPage() {
                   : "none",
             }}
           />
-          {lang === "fr" ? sc.frLabel : sc.label}
+          {statusLabel}
           {status === "reconnecting" &&
             reconnectCountdown > 0 &&
             ` (${reconnectCountdown}s)`}
@@ -1231,10 +1385,12 @@ export default function UVK5ViewerPage() {
         {/* ── Keypad Panel ─────────────────────────────────────────────── */}
         {showKeypad && (
           <motion.div
+            key={model}
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.2 }}
             style={{
-              width: 200,
+              width: model === "UV-K1 V3" ? 240 : 200,
               background: "rgba(8,13,21,0.95)",
               borderLeft: "1px solid rgba(0,240,255,0.15)",
               padding: 12,
@@ -1257,25 +1413,44 @@ export default function UVK5ViewerPage() {
             >
               {lang === "fr" ? "CLAVIER RADIO" : "RADIO KEYPAD"}
             </div>
+            {/* Model label with indicator */}
             <div
               style={{
-                fontSize: "0.6rem",
-                textAlign: "center",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                fontSize: "0.62rem",
                 fontFamily: "monospace",
-                color: "rgba(255,255,255,0.2)",
+                color: "rgba(0,240,255,0.6)",
+                background: "rgba(0,240,255,0.06)",
+                border: "1px solid rgba(0,240,255,0.2)",
+                borderRadius: 6,
+                padding: "3px 8px",
               }}
             >
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  background: "#00f0ff",
+                  boxShadow: "0 0 5px #00f0ff",
+                  display: "inline-block",
+                  flexShrink: 0,
+                }}
+              />
               {model}
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-              {KEYPAD_ROWS.map((row) => (
+              {keypadRows.map((row) => (
                 <div
                   key={row.map((r) => r.id).join("-")}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(3, 1fr)",
-                    gap: 5,
+                    gridTemplateColumns: `repeat(${keypadCols}, 1fr)`,
+                    gap: 4,
                   }}
                 >
                   {row.map(({ id, span }) => (
@@ -1286,6 +1461,7 @@ export default function UVK5ViewerPage() {
                       lang={lang}
                       disabled={!isConnected}
                       onSendKey={sendKey}
+                      codeMap={activeCodeMap}
                     />
                   ))}
                 </div>
