@@ -56,7 +56,9 @@ type ThemeName =
   | "Midnight Purple"
   | "Ocean Depth"
   | "Retro CRT Green"
-  | "Blood Moon";
+  | "Blood Moon"
+  | "Ham Hacker"
+  | "Radar Ops";
 type CyberThemeName =
   | "Cyber Neon"
   | "Bunker Dark"
@@ -74,6 +76,8 @@ interface ThemeColors {
   gradient?: [string, string];
   stars?: boolean;
   strongScanlines?: boolean;
+  hamHacker?: boolean;
+  radarOps?: boolean;
 }
 
 const THEMES: Record<ThemeName, ThemeColors> = {
@@ -143,6 +147,21 @@ const THEMES: Record<ThemeName, ThemeColors> = {
     bg: "#2a0000",
     glow: true,
     gradient: ["#2a0000", "#450000"],
+  },
+  "Ham Hacker": {
+    fg: "#b87333",
+    bg: "#0a1a08",
+    glow: true,
+    gradient: ["#0a1a08", "#0d2208"],
+    hamHacker: true,
+  },
+  "Radar Ops": {
+    fg: "#00ff41",
+    bg: "#001a00",
+    glow: true,
+    gradient: ["#001a00", "#003300"],
+    radarOps: true,
+    strongScanlines: false,
   },
 };
 
@@ -548,7 +567,10 @@ export default function UVK5ViewerPage() {
       ? saved
       : "Blue";
   });
-  const [model, setModel] = useState<ModelName>("UV-K5");
+  const [model, setModel] = useState<ModelName>(() => {
+    const saved = localStorage.getItem("uvk5-radio-model") as ModelName | null;
+    return saved === "UV-K1 V3" ? "UV-K1 V3" : "UV-K5";
+  });
   const [lang, setLang] = useState<Lang>("en");
   const [scale, setScale] = useState(9);
   const [showKeypad, setShowKeypad] = useState(true);
@@ -567,6 +589,8 @@ export default function UVK5ViewerPage() {
   const scanlineCanvasRef = useRef<HTMLCanvasElement>(null);
   const starsCanvasRef = useRef<HTMLCanvasElement>(null);
   const starsAnimRef = useRef<number | null>(null);
+  const radarAnimRef = useRef<number | null>(null);
+  const radarAngleRef = useRef<number>(0);
   const starsDataRef = useRef<
     {
       x: number;
@@ -730,6 +754,91 @@ export default function UVK5ViewerPage() {
         }
       }
     }
+    // Ham Hacker: circuit board pattern + CPU die
+    if (t.hamHacker) {
+      const ctx2 = canvas.getContext("2d")!;
+      ctx2.save();
+      ctx2.globalAlpha = 0.18;
+      ctx2.strokeStyle = "#1a4d1a";
+      ctx2.lineWidth = 1.5;
+      const step = pw * 8;
+      for (let yy = step; yy < ch; yy += step) {
+        ctx2.beginPath();
+        ctx2.moveTo(0, yy);
+        ctx2.lineTo(cw, yy);
+        ctx2.stroke();
+      }
+      for (let xx = step; xx < cw; xx += step) {
+        ctx2.beginPath();
+        ctx2.moveTo(xx, 0);
+        ctx2.lineTo(xx, ch);
+        ctx2.stroke();
+      }
+      ctx2.fillStyle = "#2a6b2a";
+      ctx2.globalAlpha = 0.25;
+      for (let yy = step; yy < ch; yy += step) {
+        for (let xx = step; xx < cw; xx += step) {
+          ctx2.beginPath();
+          ctx2.arc(xx, yy, 2.5, 0, Math.PI * 2);
+          ctx2.fill();
+        }
+      }
+      const cpuX = cw / 2;
+      const cpuY = ch / 2;
+      const cpuSize = pw * 6;
+      ctx2.globalAlpha = 0.5;
+      ctx2.fillStyle = "#2a1a08";
+      ctx2.strokeStyle = "#d4a017";
+      ctx2.lineWidth = 1.5;
+      ctx2.fillRect(cpuX - cpuSize, cpuY - cpuSize, cpuSize * 2, cpuSize * 2);
+      ctx2.strokeRect(cpuX - cpuSize, cpuY - cpuSize, cpuSize * 2, cpuSize * 2);
+      ctx2.globalAlpha = 0.6;
+      ctx2.fillStyle = "#b87333";
+      const innerSize = cpuSize * 0.6;
+      ctx2.fillRect(
+        cpuX - innerSize,
+        cpuY - innerSize,
+        innerSize * 2,
+        innerSize * 2,
+      );
+      ctx2.fillStyle = "#d4a017";
+      ctx2.globalAlpha = 0.5;
+      const pinCount = 4;
+      const pinW = 2;
+      const pinH = 4;
+      const pinSpacing = (cpuSize * 1.6) / (pinCount + 1);
+      for (let i = 1; i <= pinCount; i++) {
+        const pinOffset = -cpuSize + i * pinSpacing;
+        ctx2.fillRect(
+          cpuX + pinOffset - pinW / 2,
+          cpuY - cpuSize - pinH,
+          pinW,
+          pinH,
+        );
+        ctx2.fillRect(cpuX + pinOffset - pinW / 2, cpuY + cpuSize, pinW, pinH);
+        ctx2.fillRect(
+          cpuX - cpuSize - pinH,
+          cpuY + pinOffset - pinW / 2,
+          pinH,
+          pinW,
+        );
+        ctx2.fillRect(cpuX + cpuSize, cpuY + pinOffset - pinW / 2, pinH, pinW);
+      }
+      ctx2.globalAlpha = 0.06;
+      const radGrad = ctx2.createRadialGradient(
+        cpuX,
+        cpuY,
+        0,
+        cpuX,
+        cpuY,
+        cw * 0.6,
+      );
+      radGrad.addColorStop(0, "#ffaa00");
+      radGrad.addColorStop(1, "transparent");
+      ctx2.fillStyle = radGrad;
+      ctx2.fillRect(0, 0, cw, ch);
+      ctx2.restore();
+    }
     frameCountRef.current++;
   }, [theme, scale]);
 
@@ -744,7 +853,11 @@ export default function UVK5ViewerPage() {
       if (row % 2 === 1) {
         ctx.fillStyle = THEMES[theme]?.strongScanlines
           ? "rgba(0,0,0,0.22)"
-          : "rgba(0,0,0,0.08)";
+          : theme === "Ham Hacker"
+            ? "rgba(184,115,51,0.07)"
+            : theme === "Radar Ops"
+              ? "rgba(0,80,0,0.15)"
+              : "rgba(0,0,0,0.08)";
         ctx.fillRect(0, row * scale, W * scale, scale);
       }
     }
@@ -759,6 +872,10 @@ export default function UVK5ViewerPage() {
     if (starsAnimRef.current) {
       cancelAnimationFrame(starsAnimRef.current);
       starsAnimRef.current = null;
+    }
+    if (radarAnimRef.current) {
+      cancelAnimationFrame(radarAnimRef.current);
+      radarAnimRef.current = null;
     }
     if (!THEMES[theme]?.stars) {
       ctx.clearRect(0, 0, starsCanvas.width, starsCanvas.height);
@@ -799,6 +916,127 @@ export default function UVK5ViewerPage() {
     animate();
     return () => {
       if (starsAnimRef.current) cancelAnimationFrame(starsAnimRef.current);
+    };
+  }, [theme, scale]);
+
+  // ── Radar Ops Animation ─────────────────────────────────────────────────
+  useEffect(() => {
+    const starsCanvas = starsCanvasRef.current;
+    if (!starsCanvas) return;
+    const ctx = starsCanvas.getContext("2d");
+    if (!ctx) return;
+    if (radarAnimRef.current) {
+      cancelAnimationFrame(radarAnimRef.current);
+      radarAnimRef.current = null;
+    }
+    if (!THEMES[theme]?.radarOps) {
+      ctx.clearRect(0, 0, starsCanvas.width, starsCanvas.height);
+      return;
+    }
+    const cw = W * scale;
+    const ch = H * scale;
+    starsCanvas.width = cw;
+    starsCanvas.height = ch;
+    const cx = cw / 2;
+    const cy = ch / 2;
+    const maxR = Math.sqrt(cx * cx + cy * cy);
+    let lastTime = 0;
+    const SPEED = 0.4; // radians per second
+    const blips = Array.from({ length: 4 }, () => ({
+      x: cx + (Math.random() - 0.5) * cw * 0.6,
+      y: cy + (Math.random() - 0.5) * ch * 0.6,
+      alpha: Math.random() * 0.5 + 0.2,
+    }));
+    const gridStep = Math.min(cw, ch) / 6;
+    const animate = (ts: number) => {
+      const dt = lastTime ? (ts - lastTime) / 1000 : 0;
+      lastTime = ts;
+      radarAngleRef.current =
+        (radarAngleRef.current + SPEED * dt) % (Math.PI * 2);
+      ctx.clearRect(0, 0, cw, ch);
+
+      // Grid lines
+      ctx.save();
+      ctx.strokeStyle = "rgba(0,180,40,0.12)";
+      ctx.lineWidth = 0.5;
+      for (let x = 0; x < cw; x += gridStep) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, ch);
+        ctx.stroke();
+      }
+      for (let y = 0; y < ch; y += gridStep) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(cw, y);
+        ctx.stroke();
+      }
+      // Concentric range circles
+      for (let r = gridStep; r < maxR; r += gridStep) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // Sweep trail (wedge segments)
+      const sweepLen = Math.PI * 0.5;
+      for (let i = 0; i < 28; i++) {
+        const trailAlpha = (i / 28) * 0.16;
+        const startA = radarAngleRef.current - sweepLen * (1 - i / 28);
+        const endA = radarAngleRef.current - sweepLen * (1 - (i + 1) / 28);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, maxR, startA, endA);
+        ctx.closePath();
+        ctx.fillStyle = `rgba(0,255,65,${trailAlpha.toFixed(3)})`;
+        ctx.fill();
+      }
+
+      // Leading line
+      ctx.save();
+      ctx.strokeStyle = "rgba(0,255,65,0.85)";
+      ctx.lineWidth = 1.5;
+      ctx.shadowColor = "#00ff41";
+      ctx.shadowBlur = 4;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(
+        cx + Math.cos(radarAngleRef.current) * maxR,
+        cy + Math.sin(radarAngleRef.current) * maxR,
+      );
+      ctx.stroke();
+      ctx.restore();
+
+      // Pulsing scope circle
+      const pulse = 0.35 + 0.25 * Math.sin(ts * 0.003);
+      ctx.save();
+      ctx.strokeStyle = `rgba(0,255,65,${pulse.toFixed(2)})`;
+      ctx.lineWidth = 1;
+      ctx.shadowColor = "#00ff41";
+      ctx.shadowBlur = 5;
+      ctx.beginPath();
+      ctx.arc(cx, cy, gridStep * 0.3, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+
+      // Blips
+      for (const b of blips) {
+        ctx.save();
+        ctx.fillStyle = `rgba(0,255,65,${(b.alpha * 0.8).toFixed(2)})`;
+        ctx.shadowColor = "#00ff41";
+        ctx.shadowBlur = 5;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      radarAnimRef.current = requestAnimationFrame(animate);
+    };
+    animate(0);
+    return () => {
+      if (radarAnimRef.current) cancelAnimationFrame(radarAnimRef.current);
     };
   }, [theme, scale]);
 
@@ -1377,7 +1615,13 @@ export default function UVK5ViewerPage() {
           >
             {(Object.keys(THEMES) as ThemeName[]).map((t) => (
               <option key={t} value={t}>
-                {t === "Galaxy Dream" ? "✦ Galaxy Dream" : t}
+                {t === "Galaxy Dream"
+                  ? "✦ Galaxy Dream"
+                  : t === "Ham Hacker"
+                    ? "⚡ Ham Hacker"
+                    : t === "Radar Ops"
+                      ? "📡 Radar Ops"
+                      : t}
               </option>
             ))}
           </select>
@@ -1387,56 +1631,58 @@ export default function UVK5ViewerPage() {
         <div
           style={{
             display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "6px 10px",
-            borderRadius: 8,
-            border: "1px solid rgba(0,240,255,0.3)",
-            background: "rgba(0,240,255,0.04)",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            gap: 2,
           }}
-          data-ocid="viewer.model.radio"
         >
           <span
             style={{
-              fontSize: "0.6rem",
-              color: "rgba(0,240,255,0.4)",
+              fontSize: "0.55rem",
+              color: `${CYBER_THEMES[cyberTheme].accent}66`,
               fontWeight: 700,
-              letterSpacing: "0.1em",
+              letterSpacing: "0.12em",
             }}
           >
-            MODEL
+            RADIO MODEL
           </span>
-          {(["UV-K5", "UV-K1 V3"] as ModelName[]).map((m) => (
-            <label
-              key={m}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 5,
-                cursor: "pointer",
-              }}
-            >
-              <input
-                type="radio"
-                name="viewer-model"
+          <select
+            value={model}
+            onChange={(e) => {
+              const m = e.target.value as ModelName;
+              setModel(m);
+              localStorage.setItem("uvk5-radio-model", m);
+            }}
+            style={{
+              background: "rgba(10,10,20,0.6)",
+              border: `1px solid ${CYBER_THEMES[cyberTheme].accentGlow}`,
+              color: CYBER_THEMES[cyberTheme].accent,
+              borderRadius: 6,
+              padding: "3px 6px",
+              fontSize: "0.7rem",
+              fontWeight: 700,
+              cursor: "pointer",
+              outline: "none",
+              fontFamily: "inherit",
+              backdropFilter: "blur(8px)",
+              boxShadow: `0 0 6px ${CYBER_THEMES[cyberTheme].accentDim}`,
+              letterSpacing: "0.04em",
+            }}
+            data-ocid="viewer.radio_model.select"
+          >
+            {(["UV-K5", "UV-K1 V3"] as ModelName[]).map((m) => (
+              <option
+                key={m}
                 value={m}
-                checked={model === m}
-                onChange={() => setModel(m)}
-                style={{ accentColor: "#00f0ff" }}
-              />
-              <span
                 style={{
-                  fontSize: "0.72rem",
-                  fontWeight: 700,
-                  color: model === m ? "#00f0ff" : "#555",
-                  transition: "color 0.15s",
-                  textShadow: model === m ? "0 0 8px #00f0ff88" : "none",
+                  background: "#0a0a14",
+                  color: CYBER_THEMES[cyberTheme].accent,
                 }}
               >
                 {m}
-              </span>
-            </label>
-          ))}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Zoom */}
