@@ -51,7 +51,12 @@ type ThemeName =
   | "Purple Neon"
   | "Red Alert"
   | "Deep Blue"
-  | "White Crisp";
+  | "White Crisp"
+  | "Galaxy Dream"
+  | "Midnight Purple"
+  | "Ocean Depth"
+  | "Retro CRT Green"
+  | "Blood Moon";
 type CyberThemeName =
   | "Cyber Neon"
   | "Bunker Dark"
@@ -67,6 +72,8 @@ interface ThemeColors {
   bg: string;
   glow: boolean;
   gradient?: [string, string];
+  stars?: boolean;
+  strongScanlines?: boolean;
 }
 
 const THEMES: Record<ThemeName, ThemeColors> = {
@@ -105,64 +112,75 @@ const THEMES: Record<ThemeName, ThemeColors> = {
     gradient: ["#00002a", "#00004d"],
   },
   "White Crisp": { fg: "#000000", bg: "#f5f5f5", glow: false },
+  "Galaxy Dream": {
+    fg: "#89cff0",
+    bg: "#000000",
+    glow: true,
+    gradient: ["#000000", "#000a1a"],
+    stars: true,
+  },
+  "Midnight Purple": {
+    fg: "#c084fc",
+    bg: "#1a0033",
+    glow: true,
+    gradient: ["#1a0033", "#2d0052"],
+  },
+  "Ocean Depth": {
+    fg: "#00ffff",
+    bg: "#001f3f",
+    glow: true,
+    gradient: ["#001f3f", "#003366"],
+  },
+  "Retro CRT Green": {
+    fg: "#00ff41",
+    bg: "#000000",
+    glow: true,
+    gradient: ["#000000", "#001a00"],
+    strongScanlines: true,
+  },
+  "Blood Moon": {
+    fg: "#ff004d",
+    bg: "#2a0000",
+    glow: true,
+    gradient: ["#2a0000", "#450000"],
+  },
 };
 
 interface CyberThemeConfig {
   accent: string;
   accentGlow: string;
   accentDim: string;
-  secondary: string;
-  secondaryGlow: string;
-  secondaryDim: string;
 }
 const CYBER_THEMES: Record<CyberThemeName, CyberThemeConfig> = {
   "Cyber Neon": {
     accent: "#00f0ff",
-    accentGlow: "rgba(0,240,255,0.5)",
+    accentGlow: "rgba(0,240,255,0.4)",
     accentDim: "rgba(0,240,255,0.15)",
-    secondary: "#a855f7",
-    secondaryGlow: "rgba(168,85,247,0.5)",
-    secondaryDim: "rgba(168,85,247,0.15)",
   },
   "Bunker Dark": {
-    accent: "#64748b",
-    accentGlow: "rgba(100,116,139,0.5)",
-    accentDim: "rgba(100,116,139,0.15)",
-    secondary: "#94a3b8",
-    secondaryGlow: "rgba(148,163,184,0.4)",
-    secondaryDim: "rgba(148,163,184,0.12)",
+    accent: "#4a5568",
+    accentGlow: "rgba(74,85,104,0.4)",
+    accentDim: "rgba(74,85,104,0.15)",
   },
   "Classic Blue": {
     accent: "#3b82f6",
-    accentGlow: "rgba(59,130,246,0.5)",
+    accentGlow: "rgba(59,130,246,0.4)",
     accentDim: "rgba(59,130,246,0.15)",
-    secondary: "#06b6d4",
-    secondaryGlow: "rgba(6,182,212,0.5)",
-    secondaryDim: "rgba(6,182,212,0.15)",
   },
   "Purple Plasma": {
     accent: "#a855f7",
-    accentGlow: "rgba(168,85,247,0.5)",
+    accentGlow: "rgba(168,85,247,0.4)",
     accentDim: "rgba(168,85,247,0.15)",
-    secondary: "#ec4899",
-    secondaryGlow: "rgba(236,72,153,0.5)",
-    secondaryDim: "rgba(236,72,153,0.15)",
   },
   "Green Matrix": {
     accent: "#22c55e",
-    accentGlow: "rgba(34,197,94,0.5)",
+    accentGlow: "rgba(34,197,94,0.4)",
     accentDim: "rgba(34,197,94,0.15)",
-    secondary: "#39ff14",
-    secondaryGlow: "rgba(57,255,20,0.5)",
-    secondaryDim: "rgba(57,255,20,0.15)",
   },
   "Amber Terminal": {
     accent: "#f59e0b",
-    accentGlow: "rgba(245,158,11,0.5)",
+    accentGlow: "rgba(245,158,11,0.4)",
     accentDim: "rgba(245,158,11,0.15)",
-    secondary: "#ff6b35",
-    secondaryGlow: "rgba(255,107,53,0.5)",
-    secondaryDim: "rgba(255,107,53,0.15)",
   },
 };
 
@@ -196,6 +214,8 @@ const KEY_CODES_UVK5: Record<string, number> = {
 };
 
 // Key codes for UV-K1 (F4HWN Fusion v5.2.0)
+// UV-K1 key codes – base codes from F4HWN Fusion firmware keyboard.h
+// Short press: type 0x03 + code; Long press: type 0x04 + code (vcp.c protocol)
 const KEY_CODES_UVK1: Record<string, number> = {
   MENU: 0x0a,
   LEFT: 0x0b,
@@ -359,20 +379,6 @@ const STATUS_CONFIG: Record<
   error: { label: "Send failed", color: "#ff4444", frLabel: "Échec envoi" },
 };
 
-// ── Liquid Glass helper ───────────────────────────────────────────────────────
-const liquidGlass = (
-  borderColor = "rgba(0,240,255,0.4)",
-  glowColor = "rgba(0,240,255,0.5)",
-) =>
-  ({
-    backdropFilter: "blur(12px) saturate(180%) brightness(110%)",
-    WebkitBackdropFilter: "blur(12px) saturate(180%) brightness(110%)",
-    background:
-      "linear-gradient(to bottom right, rgba(255,255,255,0.06), rgba(20,20,40,0.35))",
-    border: `1px solid ${borderColor}`,
-    boxShadow: `0 0 15px ${glowColor}, inset 0 1px 0 rgba(255,255,255,0.07)`,
-  }) as React.CSSProperties;
-
 // ── KeypadBtn ─────────────────────────────────────────────────────────────────
 interface KeypadBtnProps {
   keyId: string;
@@ -380,9 +386,6 @@ interface KeypadBtnProps {
   disabled: boolean;
   onSendKey: (keyId: string, isLong: boolean) => void;
   codeMap: Record<string, number>;
-  accent: string;
-  secondary: string;
-  secondaryGlow: string;
 }
 
 function KeypadBtn({
@@ -391,15 +394,11 @@ function KeypadBtn({
   disabled,
   onSendKey,
   codeMap,
-  accent,
-  secondary,
-  secondaryGlow,
 }: KeypadBtnProps) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const repeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const longFiredRef = useRef(false);
   const [pressed, setPressed] = useState(false);
-  const [hovered, setHovered] = useState(false);
   const labels = lang === "fr" ? KEY_LABELS_FR : KEY_LABELS_EN;
   const displayLabel = labels[keyId] ?? keyId;
   const isPTT = keyId === "PTT";
@@ -415,12 +414,13 @@ function KeypadBtn({
     "FUNCTION",
   ].includes(keyId);
 
+  // Detect UV-K1 split-label buttons (have a space: "1 Band", "* Scan", "# Lock", "0 FM", etc.)
   const spaceIdx = displayLabel.indexOf(" ");
   const isSplitLabel = spaceIdx !== -1 && !isPTT && !isNav && !isAccent;
   const splitPrimary = isSplitLabel ? displayLabel.slice(0, spaceIdx) : null;
   const splitSecondary = isSplitLabel ? displayLabel.slice(spaceIdx + 1) : null;
 
-  const _isDigit =
+  const isDigit =
     /^[0-9]$/.test(keyId) || ["*", "#"].includes(keyId) || isSplitLabel;
 
   const stopRepeat = () => {
@@ -435,9 +435,11 @@ function KeypadBtn({
     e.currentTarget.setPointerCapture(e.pointerId);
     setPressed(true);
     longFiredRef.current = false;
+    // 450ms = 45 polls × 10ms (SERIAL_KEY_LONG_POLLS × poll cycle)
     timerRef.current = setTimeout(() => {
       longFiredRef.current = true;
-      onSendKey(keyId, true);
+      onSendKey(keyId, true); // first long send
+      // keep sending long every 100ms while held
       repeatRef.current = setInterval(() => {
         onSendKey(keyId, true);
       }, 100);
@@ -450,13 +452,12 @@ function KeypadBtn({
       clearTimeout(timerRef.current);
       timerRef.current = null;
       if (!longFiredRef.current) {
-        onSendKey(keyId, false);
+        onSendKey(keyId, false); // quick release → short press
       }
     }
   };
   const handlePointerLeave = () => {
     setPressed(false);
-    setHovered(false);
     stopRepeat();
     if (timerRef.current) {
       clearTimeout(timerRef.current);
@@ -464,149 +465,75 @@ function KeypadBtn({
     }
   };
 
+  let baseStyle =
+    "select-none rounded border text-xs font-bold tracking-wider transition-all duration-150 cursor-pointer flex items-center justify-center ";
+  if (isPTT)
+    baseStyle +=
+      "py-2 border-orange-500/60 bg-orange-900/40 text-orange-300 hover:border-orange-400 hover:shadow-[0_0_10px_rgba(249,115,22,0.4)] ";
+  else if (isAccent)
+    baseStyle +=
+      "py-1.5 border-[#00f0ff44] bg-[#0a1628] text-[#00f0ff] hover:border-[#00f0ff] hover:shadow-[0_0_8px_#00f0ff55] ";
+  else if (isNav)
+    baseStyle +=
+      "py-1.5 border-[#a855f733] bg-[#0a0f1e] text-[#a855f7] hover:border-[#a855f7] hover:shadow-[0_0_8px_#a855f755] ";
+  else if (isDigit)
+    baseStyle +=
+      "py-1.5 border-[rgba(0,240,255,0.25)] bg-[#0d1117] text-[#e0e0e0] hover:border-[#00f0ff88] hover:shadow-[0_0_8px_#00f0ff44] ";
+  else
+    baseStyle +=
+      "py-1.5 border-[#00f0ff33] bg-[#0a1628] text-[#00f0ff99] hover:border-[#00f0ff88] ";
+  if (pressed)
+    baseStyle +=
+      "scale-95 brightness-150 shadow-[0_0_16px_#00f0ffaa] border-[#00f0ff] ";
+  if (disabled) baseStyle += "opacity-40 cursor-not-allowed ";
+
   const shortCode = codeMap[keyId] ?? 0;
-
-  // Per-type liquid glass base styles
-  let borderColor: string;
-  let glowColor: string;
-  let textColor: string;
-  let bgBase: string;
-
-  if (isPTT) {
-    borderColor = "rgba(249,115,22,0.5)";
-    glowColor = "rgba(249,115,22,0.4)";
-    textColor = "#fb923c";
-    bgBase = "rgba(249,115,22,0.08)";
-  } else if (isNav) {
-    borderColor = `${secondary}66`;
-    glowColor = secondaryGlow;
-    textColor = secondary;
-    bgBase = "rgba(20,20,40,0.3)";
-  } else if (isAccent) {
-    borderColor = `${accent}66`;
-    glowColor = `${accent}80`;
-    textColor = accent;
-    bgBase = "rgba(20,20,40,0.3)";
-  } else {
-    // digit / split
-    borderColor = `${secondary}44`;
-    glowColor = `${secondary}66`;
-    textColor = "#e0e0e0";
-    bgBase = "rgba(20,20,40,0.25)";
-  }
-
-  const hoverBorderColor = isPTT
-    ? "rgba(249,115,22,0.9)"
-    : isNav
-      ? secondary
-      : accent;
-  const hoverGlow = isPTT
-    ? "rgba(249,115,22,0.6)"
-    : isNav
-      ? secondaryGlow
-      : glowColor;
-
-  const buttonStyle: React.CSSProperties = {
-    position: "relative",
-    overflow: "hidden",
-    borderRadius: 8,
-    border: `1px solid ${pressed ? hoverBorderColor : hovered ? hoverBorderColor : borderColor}`,
-    color: textColor,
-    background: pressed
-      ? `linear-gradient(to bottom right, rgba(255,255,255,0.12), ${bgBase})`
-      : hovered
-        ? `linear-gradient(to bottom right, rgba(255,255,255,0.09), ${bgBase})`
-        : `linear-gradient(to bottom right, rgba(255,255,255,0.05), ${bgBase})`,
-    backdropFilter: "blur(12px) saturate(180%) brightness(110%)",
-    WebkitBackdropFilter: "blur(12px) saturate(180%) brightness(110%)",
-    boxShadow: pressed
-      ? `0 0 20px ${hoverGlow}, inset 0 1px 0 rgba(255,255,255,0.15)`
-      : hovered
-        ? `0 0 15px ${hoverGlow}, inset 0 1px 0 rgba(255,255,255,0.1)`
-        : `0 0 6px ${glowColor}55, inset 0 1px 0 rgba(255,255,255,0.05)`,
-    transform: pressed
-      ? "scale(0.95)"
-      : hovered
-        ? "scale(1.03) brightness(1.2)"
-        : "scale(1)",
-    transition: "all 0.12s ease",
-    cursor: disabled ? "not-allowed" : "pointer",
-    opacity: disabled ? 0.4 : 1,
-    padding: isPTT ? "8px 0" : "6px 0",
-    fontSize: "0.72rem",
-    fontWeight: 700,
-    letterSpacing: "0.04em",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    userSelect: "none",
-    WebkitUserSelect: "none",
-    filter: hovered && !pressed ? "brightness(1.2)" : "none",
-  };
-
   return (
     <button
       type="button"
-      style={buttonStyle}
+      className={baseStyle}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerLeave}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
       disabled={disabled}
       aria-label={`Key ${keyId}`}
       title={`${keyId} · short: AA 55 03 ${shortCode.toString(16).padStart(2, "0")} · long: AA 55 04 ${shortCode.toString(16).padStart(2, "0")}`}
-      data-ocid={"viewer.keypad.button"}
     >
-      {/* Inner highlight shimmer */}
-      <span
-        style={{
-          position: "absolute",
-          inset: 0,
-          background:
-            "linear-gradient(to bottom right, rgba(255,255,255,0.08), transparent)",
-          borderRadius: 7,
-          pointerEvents: "none",
-        }}
-      />
       {isSplitLabel ? (
         <span
           style={{
-            position: "relative",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
             lineHeight: 1,
-            gap: 2,
+            gap: 1,
           }}
         >
           <span
             style={{
-              fontSize: "0.95rem",
+              fontSize: "1rem",
               fontWeight: 800,
-              color: accent,
+              color: "#fff",
               lineHeight: 1,
-              textShadow: `0 0 6px ${accent}88`,
             }}
           >
             {splitPrimary}
           </span>
           <span
             style={{
-              fontSize: "0.5rem",
-              color: secondary,
-              fontWeight: 600,
+              fontSize: "0.52rem",
+              color: "#aaa",
+              fontWeight: 500,
               lineHeight: 1,
               textAlign: "center",
-              textShadow: `0 0 5px ${secondaryGlow}`,
             }}
           >
             {splitSecondary}
           </span>
         </span>
       ) : (
-        <span style={{ position: "relative" }}>{displayLabel}</span>
+        displayLabel
       )}
     </button>
   );
@@ -615,7 +542,12 @@ function KeypadBtn({
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function UVK5ViewerPage() {
   const [status, setStatus] = useState<Status>("ready");
-  const [theme, setTheme] = useState<ThemeName>("Blue");
+  const [theme, setTheme] = useState<ThemeName>(() => {
+    const saved = localStorage.getItem("uvk5-lcd-theme") as ThemeName | null;
+    return saved && (THEMES as Record<string, ThemeColors>)[saved]
+      ? saved
+      : "Blue";
+  });
   const [model, setModel] = useState<ModelName>("UV-K5");
   const [lang, setLang] = useState<Lang>("en");
   const [scale, setScale] = useState(9);
@@ -633,6 +565,18 @@ export default function UVK5ViewerPage() {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scanlineCanvasRef = useRef<HTMLCanvasElement>(null);
+  const starsCanvasRef = useRef<HTMLCanvasElement>(null);
+  const starsAnimRef = useRef<number | null>(null);
+  const starsDataRef = useRef<
+    {
+      x: number;
+      y: number;
+      r: number;
+      alpha: number;
+      speed: number;
+      dir: number;
+    }[]
+  >([]);
   const portRef = useRef<SerialPort | null>(null);
   const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(
     null,
@@ -652,6 +596,7 @@ export default function UVK5ViewerPage() {
   const freqDigitsRef = useRef<string>("");
   const freqTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Keep modelRef in sync with model state
   useEffect(() => {
     modelRef.current = model;
   }, [model]);
@@ -660,12 +605,12 @@ export default function UVK5ViewerPage() {
   const H = 64;
   const BAUD = 38400;
 
+  // Derive keypad rows and code map from selected model
   const keypadRows: KeypadRowGroup[] =
     model === "UV-K1 V3" ? KEYPAD_ROWS_UVK1 : KEYPAD_ROWS_UVK5;
+  // Build code map for tooltip display in KeyButton
   const activeCodeMap: Record<string, number> =
     model === "UV-K1 V3" ? KEY_CODES_UVK1 : KEY_CODES_UVK5;
-
-  const ct = CYBER_THEMES[cyberTheme];
 
   // ── Override manifest + register viewer SW ──────────────────────────────
   useEffect(() => {
@@ -797,11 +742,65 @@ export default function UVK5ViewerPage() {
     ctx.clearRect(0, 0, W * scale, H * scale);
     for (let row = 0; row < H; row++) {
       if (row % 2 === 1) {
-        ctx.fillStyle = "rgba(0,0,0,0.08)";
+        ctx.fillStyle = THEMES[theme]?.strongScanlines
+          ? "rgba(0,0,0,0.22)"
+          : "rgba(0,0,0,0.08)";
         ctx.fillRect(0, row * scale, W * scale, scale);
       }
     }
-  }, [scale]);
+  }, [scale, theme]);
+
+  // ── Galaxy Dream Stars ───────────────────────────────────────────────────
+  useEffect(() => {
+    const starsCanvas = starsCanvasRef.current;
+    if (!starsCanvas) return;
+    const ctx = starsCanvas.getContext("2d");
+    if (!ctx) return;
+    if (starsAnimRef.current) {
+      cancelAnimationFrame(starsAnimRef.current);
+      starsAnimRef.current = null;
+    }
+    if (!THEMES[theme]?.stars) {
+      ctx.clearRect(0, 0, starsCanvas.width, starsCanvas.height);
+      starsDataRef.current = [];
+      return;
+    }
+    const cw = W * scale;
+    const ch = H * scale;
+    starsCanvas.width = cw;
+    starsCanvas.height = ch;
+    starsDataRef.current = Array.from({ length: 60 }, () => ({
+      x: Math.random() * cw,
+      y: Math.random() * ch,
+      r: Math.random() * 1.2 + 0.3,
+      alpha: Math.random(),
+      speed: Math.random() * 0.008 + 0.003,
+      dir: Math.random() > 0.5 ? 1 : -1,
+    }));
+    const animate = () => {
+      ctx.clearRect(0, 0, cw, ch);
+      for (const s of starsDataRef.current) {
+        s.alpha += s.speed * s.dir;
+        if (s.alpha >= 1) {
+          s.alpha = 1;
+          s.dir = -1;
+        }
+        if (s.alpha <= 0) {
+          s.alpha = 0;
+          s.dir = 1;
+        }
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${s.alpha.toFixed(3)})`;
+        ctx.fill();
+      }
+      starsAnimRef.current = requestAnimationFrame(animate);
+    };
+    animate();
+    return () => {
+      if (starsAnimRef.current) cancelAnimationFrame(starsAnimRef.current);
+    };
+  }, [theme, scale]);
 
   // ── FPS Counter ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -978,9 +977,11 @@ export default function UVK5ViewerPage() {
   // ── Send Key ──────────────────────────────────────────────────────────────
   const sendKey = useCallback(
     async (keyId: string, isLong: boolean) => {
+      // Allow sends when connected OR sending (don't block digit entry between keystrokes)
       if (!writerRef.current) return;
       const st = statusRef.current;
       if (st !== "connected" && st !== "sending") return;
+      // Block PTT remote send (firmware: KEY_PTT blocked to avoid stuck transmit)
       if (keyId === "PTT") return;
       const isUVK1 = modelRef.current === "UV-K1 V3";
       const displayLabel = KEY_LABELS_EN[keyId] ?? keyId;
@@ -994,21 +995,31 @@ export default function UVK5ViewerPage() {
         if (c === undefined) return;
         baseCode = c;
       }
+      // F4HWN Fusion v5.2.0 vcp.c protocol:
+      // KEYBOARD_InjectKey:     AA 55 03 keyCode
+      // KEYBOARD_InjectKeyLong: AA 55 04 keyCode
       const typebyte = isLong ? 0x04 : 0x03;
       console.log(
         `Sending key: ${displayLabel} (code: 0x${baseCode.toString(16)}, type: 0x0${typebyte}, ${isLong ? "long" : "short"})`,
       );
 
+      // ── Frequency digit tracking ──────────────────────────────────────────
+      // Digit keys: track what user is typing for "Typing frequency: 145.600"
       const isDigitKey =
-        /^[0-9]$/.test(keyId) || /^\d /.test(keyId) || keyId === "0 FM";
+        /^[0-9]$/.test(keyId) ||
+        /^\d /.test(keyId) || // UV-K1 split labels like "1 Band"
+        keyId === "0 FM";
       let statusMsg: string;
       if (isDigitKey && !isLong) {
+        // Extract the numeric character from the key id
         const digit = keyId[0];
         freqDigitsRef.current += digit;
+        // Cancel any pending reset timer
         if (freqTimerRef.current) {
           clearTimeout(freqTimerRef.current);
           freqTimerRef.current = null;
         }
+        // Reset digit buffer 3s after last digit (real radio times out similarly)
         freqTimerRef.current = setTimeout(() => {
           freqDigitsRef.current = "";
           freqTimerRef.current = null;
@@ -1016,6 +1027,7 @@ export default function UVK5ViewerPage() {
         }, 3000);
         statusMsg = `Typing frequency: ${freqDigitsRef.current}`;
       } else if (keyId === "EXIT" || keyId === "MENU") {
+        // Clear freq buffer on EXIT / MENU
         freqDigitsRef.current = "";
         if (freqTimerRef.current) {
           clearTimeout(freqTimerRef.current);
@@ -1035,6 +1047,7 @@ export default function UVK5ViewerPage() {
         await writerRef.current.write(
           new Uint8Array([0xaa, 0x55, typebyte, baseCode]),
         );
+        // Only auto-clear status for non-digit keys
         if (!isDigitKey || isLong) {
           setTimeout(() => {
             if (statusRef.current === "sending") setStatusSafe("connected");
@@ -1079,87 +1092,27 @@ export default function UVK5ViewerPage() {
         ? sc.frLabel
         : sc.label;
 
-  // Liquid glass style for top bar
-  const topBarGlass: React.CSSProperties = {
-    ...liquidGlass(`${ct.accent}40`, `${ct.accent}30`),
-    background:
-      "linear-gradient(to bottom right, rgba(255,255,255,0.05), rgba(8,13,25,0.7))",
-    borderTop: "none",
-    borderLeft: "none",
-    borderRight: "none",
-    borderBottom: `1px solid ${ct.accent}30`,
-    padding: "8px 16px",
-    display: "flex",
-    flexWrap: "wrap",
-    alignItems: "center",
-    gap: 8,
-    flexShrink: 0,
-  };
-
-  // Liquid glass style for control buttons
-  const ctrlBtn = (
-    active = false,
-    colorOverride?: string,
-  ): React.CSSProperties => {
-    const c = colorOverride ?? ct.accent;
-    return {
-      display: "flex",
-      alignItems: "center",
-      gap: 6,
-      padding: "6px 12px",
-      borderRadius: 8,
-      border: `1px solid ${active ? c : `${c}44`}`,
-      color: active ? c : `${c}99`,
-      background:
-        "linear-gradient(to bottom right, rgba(255,255,255,0.06), rgba(20,20,40,0.4))",
-      backdropFilter: "blur(12px) saturate(180%) brightness(110%)",
-      WebkitBackdropFilter: "blur(12px) saturate(180%) brightness(110%)",
-      boxShadow: active
-        ? `0 0 14px ${c}55, inset 0 1px 0 rgba(255,255,255,0.1)`
-        : `0 0 6px ${c}22, inset 0 1px 0 rgba(255,255,255,0.04)`,
-      fontSize: "0.75rem",
-      fontWeight: 700,
-      cursor: "pointer",
-      transition: "all 0.15s ease",
-    };
-  };
-
   return (
     <div
       data-ocid="viewer.page"
       style={
         {
-          background: "#060810",
+          background: "#0a0a0a",
           minHeight: "100vh",
           display: "flex",
           flexDirection: "column",
           fontFamily: "Inter, system-ui, sans-serif",
           color: "#e0e0e0",
           overflow: "hidden",
-          "--accent": ct.accent,
-          "--accent-glow": ct.accentGlow,
-          "--accent-dim": ct.accentDim,
-          "--secondary": ct.secondary,
-          "--secondary-glow": ct.secondaryGlow,
-          "--secondary-dim": ct.secondaryDim,
+          "--accent": CYBER_THEMES[cyberTheme].accent,
+          "--accent-glow": CYBER_THEMES[cyberTheme].accentGlow,
+          "--accent-dim": CYBER_THEMES[cyberTheme].accentDim,
         } as React.CSSProperties
       }
     >
       <style>{`
         @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
-        @keyframes neonPulse {
-          0%,100% { box-shadow: 0 0 10px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,0.06); }
-          50% { box-shadow: 0 0 24px var(--accent-glow), 0 0 48px var(--accent-dim), inset 0 1px 0 rgba(255,255,255,0.1); }
-        }
-        @keyframes glassShimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
-        }
-        .glass-btn:hover {
-          transform: scale(1.03) !important;
-          filter: brightness(1.2) !important;
-        }
-        .glass-btn:active { transform: scale(0.97) !important; }
+        @keyframes neonPulse { 0%,100% { box-shadow: 0 0 10px var(--accent-glow, #00f0ff55); } 50% { box-shadow: 0 0 20px var(--accent), 0 0 40px var(--accent-dim); } }
       `}</style>
 
       {/* ── Installed Toast ─────────────────────────────────────────────── */}
@@ -1171,14 +1124,14 @@ export default function UVK5ViewerPage() {
             left: "50%",
             transform: "translateX(-50%)",
             zIndex: 9999,
-            ...liquidGlass(`${ct.accent}80`, `${ct.accent}60`),
-            background:
-              "linear-gradient(to bottom right, rgba(255,255,255,0.08), rgba(0,20,20,0.85))",
-            borderRadius: 14,
+            background: "rgba(0,20,20,0.97)",
+            border: "1.5px solid #00f0ff",
+            borderRadius: 12,
             padding: "14px 28px",
-            color: ct.accent,
+            color: "#00f0ff",
             fontWeight: 700,
             fontSize: "0.9rem",
+            boxShadow: "0 0 32px rgba(0,240,255,0.4)",
             display: "flex",
             alignItems: "center",
             gap: 10,
@@ -1193,7 +1146,19 @@ export default function UVK5ViewerPage() {
       )}
 
       {/* ── Top Bar ─────────────────────────────────────────────────────── */}
-      <div style={topBarGlass} data-ocid="viewer.top_bar">
+      <div
+        style={{
+          background: "#080d15",
+          borderBottom: "1px solid rgba(0,240,255,0.15)",
+          padding: "8px 16px",
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          gap: 8,
+          flexShrink: 0,
+        }}
+        data-ocid="viewer.top_bar"
+      >
         {/* Brand */}
         <div
           style={{
@@ -1210,20 +1175,19 @@ export default function UVK5ViewerPage() {
           />
           <span
             style={{
-              color: ct.accent,
+              color: "#00f0ff",
               fontWeight: 800,
               fontSize: "0.8rem",
-              letterSpacing: "0.1em",
+              letterSpacing: "0.08em",
               whiteSpace: "nowrap",
-              textShadow: `0 0 10px ${ct.accentGlow}`,
             }}
           >
             UV-K5 MIRROR
           </span>
           <span
             style={{
-              color: `${ct.secondary}66`,
-              fontSize: "0.6rem",
+              color: "#333",
+              fontSize: "0.65rem",
               fontFamily: "monospace",
             }}
           >
@@ -1238,10 +1202,24 @@ export default function UVK5ViewerPage() {
           disabled={
             isConnected || status === "connecting" || status === "reconnecting"
           }
-          className="glass-btn"
           style={{
-            ...ctrlBtn(!isConnected),
-            opacity: isConnected ? 0.45 : 1,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "6px 14px",
+            borderRadius: 8,
+            border: `1px solid ${isConnected ? "var(--accent-dim, rgba(0,240,255,0.3))" : "var(--accent, #00f0ff)"}`,
+            color: isConnected
+              ? "rgba(0,240,255,0.5)"
+              : "var(--accent, #00f0ff)",
+            background: isConnected
+              ? "rgba(0,240,255,0.05)"
+              : "var(--accent-dim, rgba(0,240,255,0.1))",
+            boxShadow: isConnected
+              ? "none"
+              : "0 0 12px var(--accent-glow, rgba(0,240,255,0.5))",
+            fontSize: "0.75rem",
+            fontWeight: 700,
             cursor: isConnected ? "not-allowed" : "pointer",
             animation: isConnected ? "none" : "neonPulse 2.5s infinite",
           }}
@@ -1256,10 +1234,17 @@ export default function UVK5ViewerPage() {
           type="button"
           onClick={disconnect}
           disabled={!isConnected && status !== "reconnecting"}
-          className="glass-btn"
           style={{
-            ...ctrlBtn(isConnected, "#ff6060"),
-            opacity: isConnected ? 1 : 0.35,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "6px 14px",
+            borderRadius: 8,
+            border: `1px solid ${isConnected ? "rgba(255,80,80,0.7)" : "rgba(255,80,80,0.2)"}`,
+            color: isConnected ? "#ff6060" : "rgba(255,96,96,0.35)",
+            background: "rgba(255,60,60,0.05)",
+            fontSize: "0.75rem",
+            fontWeight: 700,
             cursor: isConnected ? "pointer" : "not-allowed",
           }}
           data-ocid="viewer.disconnect_button"
@@ -1272,8 +1257,19 @@ export default function UVK5ViewerPage() {
         <button
           type="button"
           onClick={() => setShowKeypad((p) => !p)}
-          className="glass-btn"
-          style={ctrlBtn(showKeypad, ct.secondary)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "6px 10px",
+            borderRadius: 8,
+            border: `1px solid ${showKeypad ? "#00f0ff" : "rgba(0,240,255,0.2)"}`,
+            color: showKeypad ? "#00f0ff" : "rgba(0,240,255,0.5)",
+            background: showKeypad ? "rgba(0,240,255,0.1)" : "transparent",
+            fontSize: "0.75rem",
+            fontWeight: 700,
+            cursor: "pointer",
+          }}
           data-ocid="viewer.keypad_toggle"
         >
           <Keyboard size={12} />
@@ -1286,9 +1282,7 @@ export default function UVK5ViewerPage() {
             display: "flex",
             borderRadius: 8,
             overflow: "hidden",
-            border: `1px solid ${ct.accent}33`,
-            backdropFilter: "blur(12px) saturate(180%)",
-            WebkitBackdropFilter: "blur(12px) saturate(180%)",
+            border: "1px solid rgba(0,240,255,0.2)",
           }}
         >
           {(["en", "fr"] as Lang[]).map((l) => (
@@ -1301,13 +1295,9 @@ export default function UVK5ViewerPage() {
                 fontSize: "0.65rem",
                 fontWeight: 700,
                 cursor: "pointer",
-                background:
-                  lang === l
-                    ? `linear-gradient(to bottom right, ${ct.accentDim}, rgba(20,20,40,0.4))`
-                    : "transparent",
-                color: lang === l ? ct.accent : "#444",
+                background: lang === l ? "rgba(0,240,255,0.15)" : "transparent",
+                color: lang === l ? "#00f0ff" : "#555",
                 border: "none",
-                transition: "all 0.15s",
               }}
             >
               {l.toUpperCase()}
@@ -1319,8 +1309,8 @@ export default function UVK5ViewerPage() {
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span
             style={{
-              fontSize: "0.58rem",
-              color: `${ct.secondary}88`,
+              fontSize: "0.6rem",
+              color: "rgba(0,240,255,0.4)",
               fontWeight: 700,
               letterSpacing: "0.1em",
               whiteSpace: "nowrap",
@@ -1332,10 +1322,10 @@ export default function UVK5ViewerPage() {
             value={cyberTheme}
             onChange={(e) => setCyberTheme(e.target.value as CyberThemeName)}
             style={{
-              ...liquidGlass(`${ct.secondary}44`, `${ct.secondary}33`),
-              background: "rgba(10,10,30,0.6)",
+              background: "#0a1628",
+              border: "1px solid var(--accent-dim, rgba(0,240,255,0.2))",
               borderRadius: 6,
-              color: ct.secondary,
+              color: "var(--accent, #00f0ff)",
               fontSize: "0.65rem",
               fontWeight: 700,
               padding: "4px 8px",
@@ -1356,8 +1346,8 @@ export default function UVK5ViewerPage() {
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span
             style={{
-              fontSize: "0.58rem",
-              color: `${ct.accent}88`,
+              fontSize: "0.6rem",
+              color: "rgba(0,240,255,0.4)",
               fontWeight: 700,
               letterSpacing: "0.1em",
               whiteSpace: "nowrap",
@@ -1367,12 +1357,16 @@ export default function UVK5ViewerPage() {
           </span>
           <select
             value={theme}
-            onChange={(e) => setTheme(e.target.value as ThemeName)}
+            onChange={(e) => {
+              const t = e.target.value as ThemeName;
+              setTheme(t);
+              localStorage.setItem("uvk5-lcd-theme", t);
+            }}
             style={{
-              ...liquidGlass(`${ct.accent}44`, `${ct.accent}33`),
-              background: "rgba(10,10,30,0.6)",
+              background: "#0a1628",
+              border: "1px solid var(--accent-dim, rgba(0,240,255,0.2))",
               borderRadius: 6,
-              color: ct.accent,
+              color: "var(--accent, #00f0ff)",
               fontSize: "0.65rem",
               fontWeight: 700,
               padding: "4px 8px",
@@ -1383,7 +1377,7 @@ export default function UVK5ViewerPage() {
           >
             {(Object.keys(THEMES) as ThemeName[]).map((t) => (
               <option key={t} value={t}>
-                {t}
+                {t === "Galaxy Dream" ? "✦ Galaxy Dream" : t}
               </option>
             ))}
           </select>
@@ -1397,16 +1391,15 @@ export default function UVK5ViewerPage() {
             gap: 10,
             padding: "6px 10px",
             borderRadius: 8,
-            ...liquidGlass(`${ct.accent}33`, `${ct.accent}22`),
-            background:
-              "linear-gradient(to bottom right, rgba(255,255,255,0.04), rgba(20,20,40,0.35))",
+            border: "1px solid rgba(0,240,255,0.3)",
+            background: "rgba(0,240,255,0.04)",
           }}
           data-ocid="viewer.model.radio"
         >
           <span
             style={{
-              fontSize: "0.58rem",
-              color: `${ct.accent}66`,
+              fontSize: "0.6rem",
+              color: "rgba(0,240,255,0.4)",
               fontWeight: 700,
               letterSpacing: "0.1em",
             }}
@@ -1429,15 +1422,15 @@ export default function UVK5ViewerPage() {
                 value={m}
                 checked={model === m}
                 onChange={() => setModel(m)}
-                style={{ accentColor: ct.accent }}
+                style={{ accentColor: "#00f0ff" }}
               />
               <span
                 style={{
                   fontSize: "0.72rem",
                   fontWeight: 700,
-                  color: model === m ? ct.accent : "#444",
+                  color: model === m ? "#00f0ff" : "#555",
                   transition: "color 0.15s",
-                  textShadow: model === m ? `0 0 8px ${ct.accentGlow}` : "none",
+                  textShadow: model === m ? "0 0 8px #00f0ff88" : "none",
                 }}
               >
                 {m}
@@ -1451,20 +1444,17 @@ export default function UVK5ViewerPage() {
           <button
             type="button"
             onClick={() => setScale((s) => Math.max(5, s - 1))}
-            className="glass-btn"
             style={{
               width: 28,
               height: 28,
-              borderRadius: 7,
-              ...liquidGlass(`${ct.accent}33`, `${ct.accent}22`),
-              background:
-                "linear-gradient(to bottom right, rgba(255,255,255,0.06), rgba(20,20,40,0.4))",
-              color: ct.accent,
+              borderRadius: 8,
+              border: "1px solid rgba(0,240,255,0.2)",
+              color: "#00f0ff",
+              background: "transparent",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              transition: "all 0.15s",
             }}
             data-ocid="viewer.zoom_out_button"
           >
@@ -1474,7 +1464,7 @@ export default function UVK5ViewerPage() {
             style={{
               fontSize: "0.7rem",
               fontFamily: "monospace",
-              color: `${ct.secondary}88`,
+              color: "#666",
               minWidth: 28,
               textAlign: "center",
             }}
@@ -1484,20 +1474,17 @@ export default function UVK5ViewerPage() {
           <button
             type="button"
             onClick={() => setScale((s) => Math.min(16, s + 1))}
-            className="glass-btn"
             style={{
               width: 28,
               height: 28,
-              borderRadius: 7,
-              ...liquidGlass(`${ct.accent}33`, `${ct.accent}22`),
-              background:
-                "linear-gradient(to bottom right, rgba(255,255,255,0.06), rgba(20,20,40,0.4))",
-              color: ct.accent,
+              borderRadius: 8,
+              border: "1px solid rgba(0,240,255,0.2)",
+              color: "#00f0ff",
+              background: "transparent",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              transition: "all 0.15s",
             }}
             data-ocid="viewer.zoom_in_button"
           >
@@ -1509,8 +1496,19 @@ export default function UVK5ViewerPage() {
         <button
           type="button"
           onClick={takeScreenshot}
-          className="glass-btn"
-          style={ctrlBtn(false, ct.secondary)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "6px 10px",
+            borderRadius: 8,
+            border: "1px solid rgba(168,85,247,0.4)",
+            color: "#a855f7",
+            background: "rgba(168,85,247,0.06)",
+            fontSize: "0.75rem",
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
           data-ocid="viewer.screenshot_button"
         >
           <Camera size={12} />
@@ -1521,7 +1519,6 @@ export default function UVK5ViewerPage() {
         <button
           type="button"
           onClick={() => setShowHelp(true)}
-          className="glass-btn"
           style={{
             display: "flex",
             alignItems: "center",
@@ -1529,10 +1526,9 @@ export default function UVK5ViewerPage() {
             width: 30,
             height: 30,
             borderRadius: "50%",
-            ...liquidGlass(`${ct.accent}66`, `${ct.accent}44`),
-            background:
-              "linear-gradient(to bottom right, rgba(255,255,255,0.08), rgba(20,20,40,0.4))",
-            color: ct.accent,
+            border: "1px solid var(--accent, #00f0ff)",
+            color: "var(--accent, #00f0ff)",
+            background: "var(--accent-dim, rgba(0,240,255,0.08))",
             fontSize: "0.85rem",
             fontWeight: 800,
             cursor: "pointer",
@@ -1554,10 +1550,9 @@ export default function UVK5ViewerPage() {
               gap: 6,
               padding: "6px 12px",
               borderRadius: 8,
-              ...liquidGlass(`${ct.accent}88`, ct.accentGlow),
-              background:
-                "linear-gradient(to bottom right, rgba(255,255,255,0.06), rgba(0,240,255,0.06))",
-              color: ct.accent,
+              border: "1px solid rgba(0,240,255,0.6)",
+              color: "#00f0ff",
+              background: "rgba(0,240,255,0.08)",
               fontSize: "0.72rem",
               fontWeight: 700,
             }}
@@ -1578,17 +1573,15 @@ export default function UVK5ViewerPage() {
               await prompt.userChoice;
               setInstallPrompt(null);
             }}
-            className="glass-btn"
             style={{
               display: "flex",
               alignItems: "center",
               gap: 6,
               padding: "6px 14px",
               borderRadius: 8,
-              ...liquidGlass(`${ct.accent}aa`, ct.accentGlow),
-              background:
-                "linear-gradient(to bottom right, rgba(255,255,255,0.08), rgba(20,20,40,0.4))",
-              color: ct.accent,
+              border: "1px solid #00f0ff",
+              color: "#00f0ff",
+              background: "rgba(0,240,255,0.1)",
               fontSize: "0.75rem",
               fontWeight: 700,
               cursor: "pointer",
@@ -1610,13 +1603,12 @@ export default function UVK5ViewerPage() {
             gap: 6,
             padding: "6px 12px",
             borderRadius: 8,
-            ...liquidGlass(`${sc.color}44`, `${sc.color}33`),
-            background: `linear-gradient(to bottom right, rgba(255,255,255,0.05), ${sc.color}0d)`,
+            border: `1px solid ${sc.color}33`,
             color: sc.color,
+            background: `${sc.color}11`,
             fontSize: "0.7rem",
             fontFamily: "monospace",
             whiteSpace: "nowrap",
-            minWidth: 180,
           }}
           data-ocid="viewer.status_panel"
         >
@@ -1626,7 +1618,7 @@ export default function UVK5ViewerPage() {
               height: 7,
               borderRadius: "50%",
               background: sc.color,
-              boxShadow: `0 0 7px ${sc.color}`,
+              boxShadow: `0 0 5px ${sc.color}`,
               flexShrink: 0,
               animation:
                 status === "connected" || status === "reconnecting"
@@ -1634,12 +1626,10 @@ export default function UVK5ViewerPage() {
                   : "none",
             }}
           />
-          <span style={{ flex: 1 }}>
-            {statusLabel}
-            {status === "reconnecting" &&
-              reconnectCountdown > 0 &&
-              ` (${reconnectCountdown}s)`}
-          </span>
+          {statusLabel}
+          {status === "reconnecting" &&
+            reconnectCountdown > 0 &&
+            ` (${reconnectCountdown}s)`}
         </div>
 
         {/* FPS */}
@@ -1647,9 +1637,9 @@ export default function UVK5ViewerPage() {
           style={{
             fontSize: "0.65rem",
             fontFamily: "monospace",
-            color: `${ct.secondary}66`,
+            color: "rgba(0,240,255,0.4)",
             whiteSpace: "nowrap",
-            minWidth: "4.5rem",
+            minWidth: "4rem",
             textAlign: "right",
           }}
         >
@@ -1670,9 +1660,9 @@ export default function UVK5ViewerPage() {
       {errorMsg && (
         <div
           style={{
-            ...liquidGlass("rgba(255,60,60,0.4)", "rgba(255,60,60,0.3)"),
-            background:
-              "linear-gradient(to right, rgba(255,60,60,0.08), rgba(20,0,0,0.4))",
+            background: "rgba(255,60,60,0.08)",
+            border: "none",
+            borderBottom: "1px solid rgba(255,60,60,0.3)",
             color: "#ff8080",
             padding: "6px 16px",
             fontSize: "0.75rem",
@@ -1721,27 +1711,25 @@ export default function UVK5ViewerPage() {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            padding: 20,
-            gap: 14,
+            padding: 16,
+            gap: 12,
           }}
           data-ocid="viewer.canvas_target"
         >
-          {/* Canvas container with liquid glass frame */}
+          {/* Canvas container */}
           <div
             style={{
               position: "relative",
               lineHeight: 0,
               border: THEMES[theme].glow
-                ? `1px solid ${ct.accent}66`
-                : `1px solid ${ct.accent}22`,
-              borderRadius: 8,
+                ? "1px solid rgba(0,200,255,0.4)"
+                : "1px solid rgba(0,240,255,0.15)",
+              borderRadius: 4,
               boxShadow: THEMES[theme].glow
-                ? `0 0 50px 12px ${ct.accent}22, 0 0 100px 24px ${ct.accent}0a, inset 0 0 24px ${ct.accent}0f, 0 0 15px ${ct.accentGlow}`
-                : `0 0 20px rgba(0,0,0,0.6), 0 0 6px ${ct.accent}11`,
+                ? "0 0 40px 10px rgba(0,100,200,0.35), 0 0 80px 20px rgba(0,60,140,0.15), inset 0 0 20px rgba(0,100,200,0.1)"
+                : "0 0 20px rgba(0,0,0,0.5)",
               overflow: "auto",
               maxWidth: "100%",
-              background:
-                "linear-gradient(to bottom right, rgba(255,255,255,0.03), rgba(0,0,0,0.2))",
             }}
           >
             <canvas
@@ -1752,6 +1740,19 @@ export default function UVK5ViewerPage() {
                 display: "block",
                 maxWidth: "100%",
                 imageRendering: "pixelated",
+              }}
+            />
+            <canvas
+              ref={starsCanvasRef}
+              width={canvasW}
+              height={canvasH}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                pointerEvents: "none",
+                maxWidth: "100%",
+                display: THEMES[theme]?.stars ? "block" : "none",
               }}
             />
             <canvas
@@ -1771,7 +1772,7 @@ export default function UVK5ViewerPage() {
           {!isConnected && (
             <div
               style={{
-                color: `${ct.accent}55`,
+                color: "rgba(0,240,255,0.35)",
                 fontSize: "0.8rem",
                 textAlign: "center",
               }}
@@ -1794,8 +1795,8 @@ export default function UVK5ViewerPage() {
           >
             {[
               { text: "Chrome/Edge only", color: "#f0c040" },
-              { text: "F4HWN v5.2.0+", color: ct.secondary },
-              { text: "HTTPS required", color: "#666" },
+              { text: "F4HWN v5.2.0+", color: "#f0c040" },
+              { text: "HTTPS required", color: "#888" },
             ].map((w) => (
               <span
                 key={w.text}
@@ -1803,11 +1804,10 @@ export default function UVK5ViewerPage() {
                   fontSize: "0.65rem",
                   fontWeight: 600,
                   color: w.color,
-                  padding: "3px 10px",
+                  padding: "2px 8px",
                   border: `1px solid ${w.color}44`,
                   borderRadius: 999,
-                  background: `linear-gradient(to right, ${w.color}0a, transparent)`,
-                  backdropFilter: "blur(8px)",
+                  background: `${w.color}0a`,
                 }}
               >
                 {w.text}
@@ -1824,14 +1824,9 @@ export default function UVK5ViewerPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.2 }}
             style={{
-              width: model === "UV-K1 V3" ? 264 : 204,
-              ...liquidGlass(`${ct.accent}22`, `${ct.accent}18`),
-              background:
-                "linear-gradient(to bottom right, rgba(255,255,255,0.03), rgba(8,10,22,0.8))",
-              borderTop: "none",
-              borderBottom: "none",
-              borderRight: "none",
-              borderLeft: `1px solid ${ct.accent}22`,
+              width: model === "UV-K1 V3" ? 260 : 200,
+              background: "rgba(8,13,21,0.95)",
+              borderLeft: "1px solid rgba(0,240,255,0.15)",
               padding: 12,
               display: "flex",
               flexDirection: "column",
@@ -1843,18 +1838,16 @@ export default function UVK5ViewerPage() {
           >
             <div
               style={{
-                fontSize: "0.63rem",
+                fontSize: "0.65rem",
                 fontWeight: 800,
                 letterSpacing: "0.15em",
-                color: `${ct.accent}88`,
+                color: "rgba(0,240,255,0.5)",
                 textAlign: "center",
-                textShadow: `0 0 8px ${ct.accentGlow}`,
               }}
             >
               {lang === "fr" ? "CLAVIER RADIO" : "RADIO KEYPAD"}
             </div>
-
-            {/* Model label */}
+            {/* Model label with indicator */}
             <div
               style={{
                 display: "flex",
@@ -1863,9 +1856,9 @@ export default function UVK5ViewerPage() {
                 gap: 6,
                 fontSize: "0.62rem",
                 fontFamily: "monospace",
-                color: ct.secondary,
-                ...liquidGlass(`${ct.secondary}44`, `${ct.secondary}33`),
-                background: `linear-gradient(to right, ${ct.secondaryDim}, transparent)`,
+                color: "rgba(0,240,255,0.6)",
+                background: "rgba(0,240,255,0.06)",
+                border: "1px solid rgba(0,240,255,0.2)",
                 borderRadius: 6,
                 padding: "3px 8px",
               }}
@@ -1875,8 +1868,8 @@ export default function UVK5ViewerPage() {
                   width: 6,
                   height: 6,
                   borderRadius: "50%",
-                  background: ct.secondary,
-                  boxShadow: `0 0 6px ${ct.secondaryGlow}`,
+                  background: "#00f0ff",
+                  boxShadow: "0 0 5px #00f0ff",
                   display: "inline-block",
                   flexShrink: 0,
                 }}
@@ -1884,7 +1877,7 @@ export default function UVK5ViewerPage() {
               {model}
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {keypadRows.map((rowGroup) => (
                 <div
                   key={rowGroup.buttons.map((r) => r.id).join("-")}
@@ -1906,9 +1899,6 @@ export default function UVK5ViewerPage() {
                       disabled={!isConnected}
                       onSendKey={sendKey}
                       codeMap={activeCodeMap}
-                      accent={ct.accent}
-                      secondary={ct.secondary}
-                      secondaryGlow={ct.secondaryGlow}
                     />
                   ))}
                 </div>
@@ -1917,9 +1907,9 @@ export default function UVK5ViewerPage() {
 
             <div
               style={{
-                fontSize: "0.58rem",
+                fontSize: "0.6rem",
                 textAlign: "center",
-                color: `${ct.secondary}55`,
+                color: "rgba(255,255,255,0.25)",
                 marginTop: 4,
               }}
             >
@@ -1938,9 +1928,8 @@ export default function UVK5ViewerPage() {
             position: "fixed",
             inset: 0,
             zIndex: 9998,
-            background: "rgba(0,0,0,0.6)",
-            backdropFilter: "blur(16px) saturate(160%)",
-            WebkitBackdropFilter: "blur(16px) saturate(160%)",
+            background: "rgba(0,0,0,0.75)",
+            backdropFilter: "blur(6px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -1952,18 +1941,18 @@ export default function UVK5ViewerPage() {
         >
           <div
             style={{
-              ...liquidGlass(`${ct.accent}55`, `${ct.accent}33`),
-              background:
-                "linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(10,12,30,0.92) 60%, rgba(20,20,40,0.95) 100%)",
-              borderRadius: 16,
-              padding: 28,
-              maxWidth: 580,
+              background: "#0d0d0d",
+              border: "1px solid rgba(0,240,255,0.2)",
+              borderRadius: 12,
+              padding: 24,
+              maxWidth: 560,
               width: "100%",
               maxHeight: "85vh",
               overflowY: "auto",
               color: "#e0e0e0",
               fontFamily: "Inter, system-ui, sans-serif",
               position: "relative",
+              boxShadow: "0 0 60px rgba(0,240,255,0.1)",
             }}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
@@ -1972,20 +1961,16 @@ export default function UVK5ViewerPage() {
             <button
               type="button"
               onClick={() => setShowHelp(false)}
-              className="glass-btn"
               style={{
                 position: "absolute",
-                top: 14,
-                right: 14,
-                ...liquidGlass(
-                  "rgba(255,255,255,0.2)",
-                  "rgba(255,255,255,0.1)",
-                ),
-                background: "rgba(255,255,255,0.06)",
-                color: "#aaa",
+                top: 12,
+                right: 12,
+                background: "none",
+                border: "1px solid rgba(255,255,255,0.15)",
+                color: "#888",
                 borderRadius: "50%",
-                width: 30,
-                height: 30,
+                width: 28,
+                height: 28,
                 cursor: "pointer",
                 fontSize: "1rem",
                 display: "flex",
@@ -1999,13 +1984,12 @@ export default function UVK5ViewerPage() {
 
             <h2
               style={{
-                color: ct.accent,
+                color: "#00f0ff",
                 fontSize: "1rem",
                 fontWeight: 800,
-                marginBottom: 18,
+                marginBottom: 16,
                 marginTop: 0,
-                paddingRight: 36,
-                textShadow: `0 0 12px ${ct.accentGlow}`,
+                paddingRight: 32,
               }}
             >
               How to Use the UV-K5 / UV-K1 Viewer
@@ -2013,10 +1997,10 @@ export default function UVK5ViewerPage() {
 
             <h3
               style={{
-                color: ct.secondary,
-                fontSize: "0.72rem",
+                color: "rgba(0,240,255,0.7)",
+                fontSize: "0.75rem",
                 fontWeight: 700,
-                letterSpacing: "0.12em",
+                letterSpacing: "0.1em",
                 marginBottom: 10,
                 marginTop: 0,
               }}
@@ -2027,16 +2011,16 @@ export default function UVK5ViewerPage() {
               style={{
                 paddingLeft: 20,
                 margin: 0,
-                marginBottom: 22,
+                marginBottom: 20,
                 display: "flex",
                 flexDirection: "column",
-                gap: 9,
+                gap: 8,
               }}
             >
               {[
                 <span key="1">
                   Flash{" "}
-                  <strong style={{ color: ct.accent }}>
+                  <strong style={{ color: "#00f0ff" }}>
                     F4HWN Fusion v5.2.0
                   </strong>{" "}
                   firmware on your radio
@@ -2046,13 +2030,11 @@ export default function UVK5ViewerPage() {
                   USB-C
                 </span>,
                 <span key="3">
-                  Select your model (
-                  <strong style={{ color: ct.secondary }}>UV-K5</strong> or{" "}
-                  <strong style={{ color: ct.secondary }}>UV-K1 V3</strong>) in
-                  the top bar
+                  Select your model (<strong>UV-K5</strong> or{" "}
+                  <strong>UV-K1 V3</strong>) in the top bar
                 </span>,
                 <span key="4">
-                  Click <strong style={{ color: ct.accent }}>Connect</strong>{" "}
+                  Click <strong style={{ color: "#00f0ff" }}>Connect</strong>{" "}
                   and choose your serial port from the browser dialog
                 </span>,
                 <span key="5">The LCD mirror will appear live on screen</span>,
@@ -2074,7 +2056,7 @@ export default function UVK5ViewerPage() {
                   key={(step as React.ReactElement).key}
                   style={{
                     fontSize: "0.8rem",
-                    lineHeight: 1.55,
+                    lineHeight: 1.5,
                     color: "#c0c0c0",
                   }}
                 >
@@ -2085,10 +2067,10 @@ export default function UVK5ViewerPage() {
 
             <h3
               style={{
-                color: "#ff7070",
-                fontSize: "0.72rem",
+                color: "rgba(255,100,100,0.8)",
+                fontSize: "0.75rem",
                 fontWeight: 700,
-                letterSpacing: "0.12em",
+                letterSpacing: "0.1em",
                 marginBottom: 10,
                 marginTop: 0,
               }}
@@ -2101,7 +2083,7 @@ export default function UVK5ViewerPage() {
                 margin: 0,
                 display: "flex",
                 flexDirection: "column",
-                gap: 7,
+                gap: 6,
               }}
             >
               {[
@@ -2116,8 +2098,8 @@ export default function UVK5ViewerPage() {
                   key={tip.slice(0, 30)}
                   style={{
                     fontSize: "0.78rem",
-                    lineHeight: 1.55,
-                    color: "#909090",
+                    lineHeight: 1.5,
+                    color: "#a0a0a0",
                   }}
                 >
                   {tip}
@@ -2127,14 +2109,13 @@ export default function UVK5ViewerPage() {
 
             <div
               style={{
-                marginTop: 22,
+                marginTop: 20,
                 padding: "10px 14px",
-                ...liquidGlass(`${ct.accent}33`, `${ct.accent}22`),
-                background: `linear-gradient(to right, ${ct.accentDim}, transparent)`,
+                background: "rgba(0,240,255,0.04)",
+                border: "1px solid rgba(0,240,255,0.12)",
                 borderRadius: 8,
-                fontSize: "0.7rem",
-                color: `${ct.accent}99`,
-                fontFamily: "monospace",
+                fontSize: "0.72rem",
+                color: "rgba(0,240,255,0.6)",
               }}
             >
               Protocol: AA55 header · 38400 baud · type 01 = full frame · type
@@ -2147,30 +2128,25 @@ export default function UVK5ViewerPage() {
       {/* ── Footer bar ──────────────────────────────────────────────────── */}
       <div
         style={{
-          ...liquidGlass(`${ct.accent}18`, `${ct.accent}10`),
-          background:
-            "linear-gradient(to right, rgba(255,255,255,0.02), rgba(8,10,22,0.7))",
-          borderTop: `1px solid ${ct.accent}18`,
-          borderBottom: "none",
-          borderLeft: "none",
-          borderRight: "none",
+          background: "#080d15",
+          borderTop: "1px solid rgba(0,240,255,0.08)",
           padding: "6px 16px",
           display: "flex",
           alignItems: "center",
           gap: 16,
           fontSize: "0.65rem",
-          color: "#333",
+          color: "#444",
           flexShrink: 0,
           flexWrap: "wrap",
         }}
       >
-        <span style={{ color: `${ct.accent}55`, fontWeight: 700 }}>
+        <span style={{ color: "rgba(0,240,255,0.3)", fontWeight: 700 }}>
           HamWaves
         </span>
         <span>UV-K5 / UV-K1 V3 Standalone Viewer</span>
         <a
           href="/equipment-reviews/uv-k5-live-mirror"
-          style={{ color: `${ct.accent}66`, textDecoration: "none" }}
+          style={{ color: "rgba(0,240,255,0.4)", textDecoration: "none" }}
         >
           Full guide ↗
         </a>
@@ -2178,7 +2154,7 @@ export default function UVK5ViewerPage() {
           href="https://github.com/armel/uv-k1-k5v3-firmware-custom"
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: `${ct.secondary}66`, textDecoration: "none" }}
+          style={{ color: "rgba(168,85,247,0.4)", textDecoration: "none" }}
         >
           F4HWN GitHub ↗
         </a>
