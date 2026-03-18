@@ -229,6 +229,9 @@ const KEY_CODES_UVK5: Record<string, number> = {
   "#": 0x1b,
   F1: 0x1c,
   F2: 0x1d,
+  SIDE1: 0x12,
+  SIDE2: 0x13,
+  SIDE3: 0x14,
   CALL: 0x07,
 };
 
@@ -252,6 +255,9 @@ const KEY_CODES_UVK1: Record<string, number> = {
   "8 R tuv": 0x08,
   "9 Call wxyz": 0x09,
   "# Lock / Function": 0x0f,
+  SIDE1: 0x12,
+  SIDE2: 0x13,
+  SIDE3: 0x14,
 };
 
 const KEY_LABELS_EN: Record<string, string> = {
@@ -281,6 +287,9 @@ const KEY_LABELS_EN: Record<string, string> = {
   "0 FM": "0 FM",
   "# Lock": "# Lock",
   "# Lock / Function": "# Lock / Fn",
+  SIDE1: "PF1",
+  SIDE2: "PF2",
+  SIDE3: "PF3",
 };
 
 const KEY_LABELS_FR: Record<string, string> = {
@@ -488,22 +497,20 @@ function KeypadBtn({
     "select-none rounded border text-xs font-bold tracking-wider transition-all duration-150 cursor-pointer flex items-center justify-center ";
   if (isPTT)
     baseStyle +=
-      "py-2 border-orange-500/60 bg-orange-900/40 text-orange-300 hover:border-orange-400 hover:shadow-[0_0_10px_rgba(249,115,22,0.4)] ";
+      "py-2 border-orange-500/60 bg-orange-900/40 text-orange-300 hover:border-orange-400 hover:shadow-[0_0_6px_rgba(249,115,22,0.15)] ";
   else if (isAccent)
     baseStyle +=
-      "py-1.5 border-[#00f0ff44] bg-[#0a1628] text-[#00f0ff] hover:border-[#00f0ff] hover:shadow-[0_0_8px_#00f0ff55] ";
+      "py-1.5 border-[rgba(0,240,255,0.22)] bg-[rgba(0,240,255,0.10)] text-[#f0faff] hover:bg-[rgba(0,240,255,0.18)] hover:border-[rgba(0,240,255,0.50)] ";
   else if (isNav)
     baseStyle +=
-      "py-1.5 border-[#a855f733] bg-[#0a0f1e] text-[#a855f7] hover:border-[#a855f7] hover:shadow-[0_0_8px_#a855f755] ";
+      "py-1.5 border-[rgba(0,240,255,0.22)] bg-[rgba(0,240,255,0.10)] text-[#f0faff] hover:bg-[rgba(0,240,255,0.18)] hover:border-[rgba(0,240,255,0.50)] ";
   else if (isDigit)
     baseStyle +=
-      "py-1.5 border-[rgba(0,240,255,0.25)] bg-[#0d1117] text-[#e0e0e0] hover:border-[#00f0ff88] hover:shadow-[0_0_8px_#00f0ff44] ";
+      "py-1.5 border-[rgba(0,240,255,0.22)] bg-[rgba(0,240,255,0.10)] text-[#f0faff] hover:bg-[rgba(0,240,255,0.18)] hover:border-[rgba(0,240,255,0.50)] ";
   else
     baseStyle +=
-      "py-1.5 border-[#00f0ff33] bg-[#0a1628] text-[#00f0ff99] hover:border-[#00f0ff88] ";
-  if (pressed)
-    baseStyle +=
-      "scale-95 brightness-150 shadow-[0_0_16px_#00f0ffaa] border-[#00f0ff] ";
+      "py-1.5 border-[rgba(0,240,255,0.22)] bg-[rgba(0,240,255,0.10)] text-[#f0faff] hover:bg-[rgba(0,240,255,0.18)] hover:border-[rgba(0,240,255,0.50)] ";
+  if (pressed) baseStyle += "scale-95 border-[rgba(0,240,255,0.60)] ";
   if (disabled) baseStyle += "opacity-40 cursor-not-allowed ";
 
   const shortCode = codeMap[keyId] ?? 0;
@@ -542,7 +549,7 @@ function KeypadBtn({
           <span
             style={{
               fontSize: "0.52rem",
-              color: "#aaa",
+              color: "rgba(240,250,255,0.6)",
               fontWeight: 500,
               lineHeight: 1,
               textAlign: "center",
@@ -555,6 +562,138 @@ function KeypadBtn({
         displayLabel
       )}
     </button>
+  );
+}
+
+// ── Side Button (PF1 / PF2 / PF3) ────────────────────────────────────────────
+function SideBtn({
+  keyId,
+  label,
+  disabled,
+  onSendKey,
+  small = false,
+}: {
+  keyId: string;
+  label: string;
+  disabled: boolean;
+  onSendKey: (keyId: string, isLong: boolean) => void;
+  small?: boolean;
+}) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const repeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const longFiredRef = useRef(false);
+  const [holding, setHolding] = useState(false);
+
+  const size = small ? 32 : 40;
+
+  function cancel() {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    if (repeatRef.current) {
+      clearInterval(repeatRef.current);
+      repeatRef.current = null;
+    }
+    longFiredRef.current = false;
+    setHolding(false);
+  }
+
+  function onDown(e: React.PointerEvent) {
+    e.preventDefault();
+    if (disabled) return;
+    longFiredRef.current = false;
+    timerRef.current = setTimeout(() => {
+      longFiredRef.current = true;
+      setHolding(true);
+      onSendKey(keyId, true);
+      repeatRef.current = setInterval(() => onSendKey(keyId, true), 100);
+    }, 450);
+  }
+
+  function onUp(e: React.PointerEvent) {
+    e.preventDefault();
+    if (!longFiredRef.current && timerRef.current) {
+      cancel();
+      onSendKey(keyId, false);
+    } else {
+      cancel();
+    }
+  }
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 2,
+      }}
+    >
+      <button
+        onPointerDown={onDown}
+        onPointerUp={onUp}
+        onPointerLeave={cancel}
+        onPointerCancel={cancel}
+        disabled={disabled}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: "50%",
+          background: holding ? "rgba(0,240,255,0.22)" : "rgba(0,240,255,0.10)",
+          border: `1px solid rgba(0,240,255,${holding ? "0.55" : "0.30"})`,
+          backdropFilter: "blur(10px) saturate(130%) brightness(105%)",
+          WebkitBackdropFilter: "blur(10px) saturate(130%) brightness(105%)",
+          cursor: disabled ? "not-allowed" : "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: "transform 0.12s ease, background 0.12s ease",
+          transform: holding ? "scale(1.08)" : undefined,
+          outline: "none",
+          padding: 0,
+          boxSizing: "border-box",
+          opacity: disabled ? 0.35 : 1,
+          flexShrink: 0,
+          userSelect: "none",
+          touchAction: "none",
+        }}
+        onMouseEnter={(e) => {
+          if (!disabled)
+            (e.currentTarget as HTMLButtonElement).style.transform =
+              "scale(1.04)";
+        }}
+        onMouseLeave={(e) => {
+          if (!holding)
+            (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
+        }}
+        type="button"
+        title={label}
+      >
+        <span
+          style={{
+            width: small ? 8 : 10,
+            height: small ? 8 : 10,
+            borderRadius: "50%",
+            background: disabled ? "rgba(0,240,255,0.3)" : "#00f0ff",
+            display: "block",
+            boxShadow: disabled ? "none" : "0 0 4px rgba(0,240,255,0.6)",
+          }}
+        />
+      </button>
+      <span
+        style={{
+          fontSize: "0.52rem",
+          color: "rgba(0,240,255,0.55)",
+          fontWeight: 600,
+          letterSpacing: "0.05em",
+          lineHeight: 1,
+          userSelect: "none",
+        }}
+      >
+        {label}
+      </span>
+    </div>
   );
 }
 
@@ -584,6 +723,7 @@ export default function UVK5ViewerPage() {
   const [cyberTheme, setCyberThemeState] =
     useState<CyberThemeName>("Cyber Neon");
   const [showHelp, setShowHelp] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scanlineCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -707,6 +847,27 @@ export default function UVK5ViewerPage() {
     if (saved && CYBER_THEMES[saved]) setCyberThemeState(saved);
   }, []);
 
+  // ── Fullscreen change listener ──────────────────────────────────────────
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullScreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFsChange);
+    return () =>
+      document.removeEventListener("fullscreenchange", handleFsChange);
+  }, []);
+
+  const toggleFullScreen = () => {
+    if (!document.fullscreenEnabled) {
+      alert("Full screen not supported in this browser");
+      return;
+    }
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
   const setCyberTheme = (t: CyberThemeName) => {
     setCyberThemeState(t);
     localStorage.setItem("uvk5-cyber-theme", t);
@@ -1335,12 +1496,12 @@ export default function UVK5ViewerPage() {
       data-ocid="viewer.page"
       style={
         {
-          background: "#0a0a0a",
+          background: "#000000",
           minHeight: "100vh",
           display: "flex",
           flexDirection: "column",
           fontFamily: "Inter, system-ui, sans-serif",
-          color: "#e0e0e0",
+          color: "#f0faff",
           overflow: "hidden",
           "--accent": CYBER_THEMES[cyberTheme].accent,
           "--accent-glow": CYBER_THEMES[cyberTheme].accentGlow,
@@ -1350,7 +1511,7 @@ export default function UVK5ViewerPage() {
     >
       <style>{`
         @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
-        @keyframes neonPulse { 0%,100% { box-shadow: 0 0 10px var(--accent-glow, #00f0ff55); } 50% { box-shadow: 0 0 20px var(--accent), 0 0 40px var(--accent-dim); } }
+        @keyframes neonPulse { 0%, 100% { box-shadow: 0 0 6px rgba(0,240,255,0.15); } 50%       { box-shadow: 0 0 6px rgba(0,240,255,0.15); } }
       `}</style>
 
       {/* ── Installed Toast ─────────────────────────────────────────────── */}
@@ -1369,7 +1530,7 @@ export default function UVK5ViewerPage() {
             color: "#00f0ff",
             fontWeight: 700,
             fontSize: "0.9rem",
-            boxShadow: "0 0 32px rgba(0,240,255,0.4)",
+            boxShadow: "0 0 6px rgba(0,240,255,0.15)",
             display: "flex",
             alignItems: "center",
             gap: 10,
@@ -1386,8 +1547,10 @@ export default function UVK5ViewerPage() {
       {/* ── Top Bar ─────────────────────────────────────────────────────── */}
       <div
         style={{
-          background: "#080d15",
-          borderBottom: "1px solid rgba(0,240,255,0.15)",
+          background:
+            "linear-gradient(to bottom right, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%), rgba(10, 10, 20, 0.32)",
+          backdropFilter: "blur(14px) saturate(160%) brightness(112%)",
+          borderBottom: "1px solid rgba(0, 240, 255, 0.22)",
           padding: "8px 16px",
           display: "flex",
           flexWrap: "wrap",
@@ -1446,16 +1609,11 @@ export default function UVK5ViewerPage() {
             gap: 6,
             padding: "6px 14px",
             borderRadius: 8,
-            border: `1px solid ${isConnected ? "var(--accent-dim, rgba(0,240,255,0.3))" : "var(--accent, #00f0ff)"}`,
-            color: isConnected
-              ? "rgba(0,240,255,0.5)"
-              : "var(--accent, #00f0ff)",
+            border: `1px solid ${isConnected ? "rgba(0,240,255,0.20)" : "rgba(0,240,255,0.30)"}`,
+            color: isConnected ? "rgba(224,247,255,0.4)" : "#f0faff",
             background: isConnected
               ? "rgba(0,240,255,0.05)"
-              : "var(--accent-dim, rgba(0,240,255,0.1))",
-            boxShadow: isConnected
-              ? "none"
-              : "0 0 12px var(--accent-glow, rgba(0,240,255,0.5))",
+              : "rgba(0,240,255,0.10)",
             fontSize: "0.75rem",
             fontWeight: 700,
             cursor: isConnected ? "not-allowed" : "pointer",
@@ -1501,9 +1659,11 @@ export default function UVK5ViewerPage() {
             gap: 6,
             padding: "6px 10px",
             borderRadius: 8,
-            border: `1px solid ${showKeypad ? "#00f0ff" : "rgba(0,240,255,0.2)"}`,
-            color: showKeypad ? "#00f0ff" : "rgba(0,240,255,0.5)",
-            background: showKeypad ? "rgba(0,240,255,0.1)" : "transparent",
+            border: `1px solid ${showKeypad ? "rgba(0,240,255,0.50)" : "rgba(0,240,255,0.30)"}`,
+            color: showKeypad ? "#f0faff" : "rgba(224,247,255,0.5)",
+            background: showKeypad
+              ? "rgba(0,240,255,0.18)"
+              : "rgba(0,240,255,0.10)",
             fontSize: "0.75rem",
             fontWeight: 700,
             cursor: "pointer",
@@ -1520,7 +1680,7 @@ export default function UVK5ViewerPage() {
             display: "flex",
             borderRadius: 8,
             overflow: "hidden",
-            border: "1px solid rgba(0,240,255,0.2)",
+            border: "1px solid rgba(0,240,255,0.30)",
           }}
         >
           {(["en", "fr"] as Lang[]).map((l) => (
@@ -1534,7 +1694,7 @@ export default function UVK5ViewerPage() {
                 fontWeight: 700,
                 cursor: "pointer",
                 background: lang === l ? "rgba(0,240,255,0.15)" : "transparent",
-                color: lang === l ? "#00f0ff" : "#555",
+                color: lang === l ? "#f0faff" : "rgba(224,247,255,0.3)",
                 border: "none",
               }}
             >
@@ -1560,10 +1720,10 @@ export default function UVK5ViewerPage() {
             value={cyberTheme}
             onChange={(e) => setCyberTheme(e.target.value as CyberThemeName)}
             style={{
-              background: "#0a1628",
-              border: "1px solid var(--accent-dim, rgba(0,240,255,0.2))",
+              background: "rgba(10, 10, 20, 0.42)",
+              border: "1px solid rgba(0, 240, 255, 0.22)",
               borderRadius: 6,
-              color: "var(--accent, #00f0ff)",
+              color: "#f0faff",
               fontSize: "0.65rem",
               fontWeight: 700,
               padding: "4px 8px",
@@ -1601,10 +1761,10 @@ export default function UVK5ViewerPage() {
               localStorage.setItem("uvk5-lcd-theme", t);
             }}
             style={{
-              background: "#0a1628",
-              border: "1px solid var(--accent-dim, rgba(0,240,255,0.2))",
+              background: "rgba(10, 10, 20, 0.42)",
+              border: "1px solid rgba(0, 240, 255, 0.22)",
               borderRadius: 6,
-              color: "var(--accent, #00f0ff)",
+              color: "#f0faff",
               fontSize: "0.65rem",
               fontWeight: 700,
               padding: "4px 8px",
@@ -1654,9 +1814,9 @@ export default function UVK5ViewerPage() {
               localStorage.setItem("uvk5-radio-model", m);
             }}
             style={{
-              background: "rgba(10,10,20,0.6)",
-              border: `1px solid ${CYBER_THEMES[cyberTheme].accentGlow}`,
-              color: CYBER_THEMES[cyberTheme].accent,
+              background: "rgba(10, 10, 20, 0.42)",
+              border: "1px solid rgba(0, 240, 255, 0.22)",
+              color: "#f0faff",
               borderRadius: 6,
               padding: "3px 6px",
               fontSize: "0.7rem",
@@ -1664,8 +1824,7 @@ export default function UVK5ViewerPage() {
               cursor: "pointer",
               outline: "none",
               fontFamily: "inherit",
-              backdropFilter: "blur(8px)",
-              boxShadow: `0 0 6px ${CYBER_THEMES[cyberTheme].accentDim}`,
+              backdropFilter: "blur(14px) saturate(160%) brightness(112%)",
               letterSpacing: "0.04em",
             }}
             data-ocid="viewer.radio_model.select"
@@ -1694,9 +1853,9 @@ export default function UVK5ViewerPage() {
               width: 28,
               height: 28,
               borderRadius: 8,
-              border: "1px solid rgba(0,240,255,0.2)",
-              color: "#00f0ff",
-              background: "transparent",
+              border: "1px solid rgba(0,240,255,0.30)",
+              color: "#f0faff",
+              background: "rgba(0,240,255,0.05)",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -1724,9 +1883,9 @@ export default function UVK5ViewerPage() {
               width: 28,
               height: 28,
               borderRadius: 8,
-              border: "1px solid rgba(0,240,255,0.2)",
-              color: "#00f0ff",
-              background: "transparent",
+              border: "1px solid rgba(0,240,255,0.30)",
+              color: "#f0faff",
+              background: "rgba(0,240,255,0.05)",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -1748,9 +1907,9 @@ export default function UVK5ViewerPage() {
             gap: 6,
             padding: "6px 10px",
             borderRadius: 8,
-            border: "1px solid rgba(168,85,247,0.4)",
-            color: "#a855f7",
-            background: "rgba(168,85,247,0.06)",
+            border: "1px solid rgba(0,240,255,0.30)",
+            color: "#f0faff",
+            background: "rgba(0,240,255,0.10)",
             fontSize: "0.75rem",
             fontWeight: 600,
             cursor: "pointer",
@@ -1772,9 +1931,9 @@ export default function UVK5ViewerPage() {
             width: 30,
             height: 30,
             borderRadius: "50%",
-            border: "1px solid var(--accent, #00f0ff)",
-            color: "var(--accent, #00f0ff)",
-            background: "var(--accent-dim, rgba(0,240,255,0.08))",
+            border: "1px solid rgba(0,240,255,0.30)",
+            color: "#f0faff",
+            background: "rgba(0,240,255,0.10)",
             fontSize: "0.85rem",
             fontWeight: 800,
             cursor: "pointer",
@@ -1787,6 +1946,45 @@ export default function UVK5ViewerPage() {
           ?
         </button>
 
+        {/* Full Screen button */}
+        <button
+          type="button"
+          onClick={toggleFullScreen}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "6px 14px",
+            borderRadius: 8,
+            border: "1px solid rgba(0,240,255,0.30)",
+            color: "#f0faff",
+            background: "rgba(0,240,255,0.10)",
+            backdropFilter: "blur(14px) saturate(160%) brightness(112%)",
+            fontSize: "0.75rem",
+            fontWeight: 700,
+            cursor: "pointer",
+            flexShrink: 0,
+            transition: "all 0.2s",
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.transform =
+              "scale(1.015)";
+            (e.currentTarget as HTMLButtonElement).style.background =
+              "rgba(0,240,255,0.18)";
+            (e.currentTarget as HTMLButtonElement).style.filter =
+              "brightness(118%)";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
+            (e.currentTarget as HTMLButtonElement).style.background =
+              "rgba(0,240,255,0.10)";
+            (e.currentTarget as HTMLButtonElement).style.filter = "";
+          }}
+          title={isFullScreen ? "Exit Full Screen" : "Enter Full Screen"}
+          data-ocid="viewer.fullscreen_button"
+        >
+          {isFullScreen ? "Exit Full Screen" : "Full Screen"}
+        </button>
         {/* Installed as App badge */}
         {isPWA && (
           <div
@@ -1796,9 +1994,11 @@ export default function UVK5ViewerPage() {
               gap: 6,
               padding: "6px 12px",
               borderRadius: 8,
-              border: "1px solid rgba(0,240,255,0.6)",
-              color: "#00f0ff",
-              background: "rgba(0,240,255,0.08)",
+              border: "1px solid rgba(0,240,255,0.30)",
+              color: "#f0faff",
+              background:
+                "linear-gradient(to bottom right, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%), rgba(10, 10, 20, 0.32)",
+              backdropFilter: "blur(14px) saturate(160%) brightness(112%)",
               fontSize: "0.72rem",
               fontWeight: 700,
             }}
@@ -1825,9 +2025,9 @@ export default function UVK5ViewerPage() {
               gap: 6,
               padding: "6px 14px",
               borderRadius: 8,
-              border: "1px solid #00f0ff",
-              color: "#00f0ff",
-              background: "rgba(0,240,255,0.1)",
+              border: "1px solid rgba(0,240,255,0.30)",
+              color: "#f0faff",
+              background: "rgba(0,240,255,0.10)",
               fontSize: "0.75rem",
               fontWeight: 700,
               cursor: "pointer",
@@ -1849,12 +2049,16 @@ export default function UVK5ViewerPage() {
             gap: 6,
             padding: "6px 12px",
             borderRadius: 8,
-            border: `1px solid ${sc.color}33`,
-            color: sc.color,
-            background: `${sc.color}11`,
+            border: "1px solid rgba(0, 240, 255, 0.22)",
+            color: "#f0faff",
+            background:
+              "linear-gradient(to bottom right, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%), rgba(10, 10, 20, 0.32)",
+            backdropFilter: "blur(14px) saturate(160%) brightness(112%)",
             fontSize: "0.7rem",
             fontFamily: "monospace",
             whiteSpace: "nowrap",
+            fontWeight: 600,
+            textShadow: "0 1px 2px rgba(0,0,0,0.8)",
           }}
           data-ocid="viewer.status_panel"
         >
@@ -1864,7 +2068,7 @@ export default function UVK5ViewerPage() {
               height: 7,
               borderRadius: "50%",
               background: sc.color,
-              boxShadow: `0 0 5px ${sc.color}`,
+              boxShadow: `0 0 3px ${sc.color}55`,
               flexShrink: 0,
               animation:
                 status === "connected" || status === "reconnecting"
@@ -1883,7 +2087,10 @@ export default function UVK5ViewerPage() {
           style={{
             fontSize: "0.65rem",
             fontFamily: "monospace",
-            color: "rgba(0,240,255,0.4)",
+            color: "#f0faff",
+            opacity: 0.7,
+            fontWeight: 500,
+            textShadow: "0 1px 2px rgba(0,0,0,0.8)",
             whiteSpace: "nowrap",
             minWidth: "4rem",
             textAlign: "right",
@@ -1967,13 +2174,9 @@ export default function UVK5ViewerPage() {
             style={{
               position: "relative",
               lineHeight: 0,
-              border: THEMES[theme].glow
-                ? "1px solid rgba(0,200,255,0.4)"
-                : "1px solid rgba(0,240,255,0.15)",
+              border: "1px solid rgba(0, 240, 255, 0.18)",
               borderRadius: 4,
-              boxShadow: THEMES[theme].glow
-                ? "0 0 40px 10px rgba(0,100,200,0.35), 0 0 80px 20px rgba(0,60,140,0.15), inset 0 0 20px rgba(0,100,200,0.1)"
-                : "0 0 20px rgba(0,0,0,0.5)",
+              boxShadow: "0 0 4px rgba(0,240,255,0.12)",
               overflow: "auto",
               maxWidth: "100%",
             }}
@@ -2071,8 +2274,10 @@ export default function UVK5ViewerPage() {
             transition={{ duration: 0.2 }}
             style={{
               width: model === "UV-K1 V3" ? 260 : 200,
-              background: "rgba(8,13,21,0.95)",
-              borderLeft: "1px solid rgba(0,240,255,0.15)",
+              background:
+                "linear-gradient(to bottom right, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%), rgba(10, 10, 20, 0.32)",
+              backdropFilter: "blur(14px) saturate(160%) brightness(112%)",
+              borderLeft: "1px solid rgba(0, 240, 255, 0.22)",
               padding: 12,
               display: "flex",
               flexDirection: "column",
@@ -2115,7 +2320,6 @@ export default function UVK5ViewerPage() {
                   height: 6,
                   borderRadius: "50%",
                   background: "#00f0ff",
-                  boxShadow: "0 0 5px #00f0ff",
                   display: "inline-block",
                   flexShrink: 0,
                 }}
@@ -2149,6 +2353,40 @@ export default function UVK5ViewerPage() {
                   ))}
                 </div>
               ))}
+            </div>
+
+            {/* ── Side Buttons (PF1 / PF2 / PF3) ──────────────────────────────── */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 6,
+                marginTop: 4,
+              }}
+            >
+              {/* Top row: SIDE1 (PF1) + SIDE2 (PF2) */}
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                {(["SIDE1", "SIDE2"] as const).map((sid) => (
+                  <SideBtn
+                    key={sid}
+                    keyId={sid}
+                    label={sid === "SIDE1" ? "PF1" : "PF2"}
+                    disabled={!isConnected}
+                    onSendKey={sendKey}
+                  />
+                ))}
+              </div>
+              {/* Bottom row: SIDE3 (PF3) */}
+              <div>
+                <SideBtn
+                  keyId="SIDE3"
+                  label="PF3"
+                  disabled={!isConnected}
+                  onSendKey={sendKey}
+                  small
+                />
+              </div>
             </div>
 
             <div
@@ -2187,18 +2425,18 @@ export default function UVK5ViewerPage() {
         >
           <div
             style={{
-              background: "#0d0d0d",
-              border: "1px solid rgba(0,240,255,0.2)",
+              background: "rgba(10, 10, 20, 0.92)",
+              backdropFilter: "blur(14px) saturate(160%) brightness(112%)",
+              border: "1px solid rgba(0, 240, 255, 0.22)",
               borderRadius: 12,
               padding: 24,
               maxWidth: 560,
               width: "100%",
               maxHeight: "85vh",
               overflowY: "auto",
-              color: "#e0e0e0",
+              color: "#f0faff",
               fontFamily: "Inter, system-ui, sans-serif",
               position: "relative",
-              boxShadow: "0 0 60px rgba(0,240,255,0.1)",
             }}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
@@ -2374,14 +2612,14 @@ export default function UVK5ViewerPage() {
       {/* ── Footer bar ──────────────────────────────────────────────────── */}
       <div
         style={{
-          background: "#080d15",
-          borderTop: "1px solid rgba(0,240,255,0.08)",
+          background: "rgba(10, 10, 20, 0.5)",
+          borderTop: "1px solid rgba(0, 240, 255, 0.15)",
           padding: "6px 16px",
           display: "flex",
           alignItems: "center",
           gap: 16,
           fontSize: "0.65rem",
-          color: "#444",
+          color: "rgba(224, 247, 255, 0.4)",
           flexShrink: 0,
           flexWrap: "wrap",
         }}
