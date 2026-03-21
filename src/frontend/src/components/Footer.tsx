@@ -1,4 +1,4 @@
-import { Instagram, Twitter, Youtube } from "lucide-react";
+import { Twitter, Youtube } from "lucide-react";
 
 const socials = [
   {
@@ -6,7 +6,6 @@ const socials = [
     label: "YouTube",
     href: "https://www.youtube.com/@dmtoozer",
   },
-  { icon: Instagram, label: "Instagram", href: "https://instagram.com/" },
   { icon: Twitter, label: "Twitter/X", href: "https://x.com/" },
 ];
 
@@ -23,7 +22,7 @@ export default function Footer() {
         {/* Logo row */}
         <div className="flex items-center gap-2">
           <img
-            src="/assets/generated/hamwaves-logo-transparent.dim_512x512.png"
+            src="/assets/uploads/gemini-2.5-flash-image_create_a_more_refined_version_of_the_image_provided_for_as_reference_does_not_ne-0-1--1.jpg"
             alt="HamWaves"
             className="h-8 w-8 object-contain"
           />

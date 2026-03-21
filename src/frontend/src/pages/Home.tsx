@@ -267,7 +267,7 @@ export default function Home() {
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
             >
               <img
-                src="/assets/generated/hamwaves-logo-transparent.dim_512x512.png"
+                src="/assets/uploads/gemini-2.5-flash-image_create_a_more_refined_version_of_the_image_provided_for_as_reference_does_not_ne-0-1--1.jpg"
                 alt="HamWaves"
                 className="w-full h-full object-contain"
                 style={{ imageRendering: "auto" }}

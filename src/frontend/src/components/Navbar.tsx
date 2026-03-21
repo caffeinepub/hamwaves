@@ -79,28 +79,13 @@ export default function Navbar() {
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center">
-          {/* Logo – left slot */}
+          {/* Logo – left slot (link only, no image/text) */}
           <div className="flex-1">
             <Link
               to="/"
               data-ocid="nav.link"
               className="inline-flex items-center gap-2 group"
-            >
-              <img
-                src="/assets/generated/hamwaves-logo-transparent.dim_512x512.png"
-                alt="HamWaves"
-                className="h-9 w-9 object-contain group-hover:drop-shadow-[0_0_8px_rgba(0,240,255,0.8)] transition-all duration-300"
-              />
-              <span
-                className="font-display font-bold text-lg tracking-wide"
-                style={{
-                  color: "#00f0ff",
-                  textShadow: "0 0 10px rgba(0,240,255,0.5)",
-                }}
-              >
-                HamWaves
-              </span>
-            </Link>
+            />
           </div>
 
           {/* Desktop Nav */}

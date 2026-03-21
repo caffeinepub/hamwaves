@@ -1397,10 +1397,16 @@ export default function UVK5ViewerPage() {
       // F4HWN Fusion v5.2.0 vcp.c protocol:
       // KEYBOARD_InjectKey:     AA 55 03 keyCode
       // KEYBOARD_InjectKeyLong: AA 55 04 keyCode
+      const isSideBtn =
+        keyId === "SIDE1" || keyId === "SIDE2" || keyId === "SIDE3";
       const typebyte = isLong ? 0x04 : 0x03;
-      console.log(
-        `Sending key: ${displayLabel} (code: 0x${baseCode.toString(16)}, type: 0x0${typebyte}, ${isLong ? "long" : "short"})`,
-      );
+      // For side buttons: long press uses code | 0x80 (e.g. 0x12 → 0x92)
+      const sendCode = isSideBtn && isLong ? baseCode | 0x80 : baseCode;
+      if (!isSideBtn) {
+        console.log(
+          `Sending key: ${displayLabel} (code: 0x${baseCode.toString(16)}, type: 0x0${typebyte}, ${isLong ? "long" : "short"})`,
+        );
+      }
 
       // ── Frequency digit tracking ──────────────────────────────────────────
       // Digit keys: track what user is typing for "Typing frequency: 145.600"
@@ -1435,6 +1441,11 @@ export default function UVK5ViewerPage() {
         statusMsg = isLong
           ? `Long press active – holding ${displayLabel}`
           : `Short press – ${displayLabel}`;
+      } else if (isSideBtn) {
+        const codeHex = `0x${sendCode.toString(16).padStart(2, "0")}`;
+        statusMsg = isLong
+          ? `Sent ${displayLabel} long (code ${codeHex})`
+          : `Sent ${displayLabel} short (code ${codeHex})`;
       } else {
         statusMsg = isLong
           ? `Long press active – holding ${displayLabel}`
@@ -1443,14 +1454,20 @@ export default function UVK5ViewerPage() {
 
       try {
         setStatusSafe("sending", statusMsg);
-        await writerRef.current.write(
-          new Uint8Array([0xaa, 0x55, typebyte, baseCode]),
-        );
+        const packet = new Uint8Array([0xaa, 0x55, typebyte, sendCode]);
+        if (isSideBtn) {
+          console.log(
+            `Side button sent: packet=${Array.from(packet)
+              .map((b) => b.toString(16).padStart(2, "0"))
+              .join(" ")} (${isLong ? "long" : "short"})`,
+          );
+        }
+        await writerRef.current.write(packet);
         // Only auto-clear status for non-digit keys
         if (!isDigitKey || isLong) {
           setTimeout(() => {
             if (statusRef.current === "sending") setStatusSafe("connected");
-          }, 1500);
+          }, 2000);
         }
       } catch {
         setStatusSafe("error", "Send failed");
@@ -1570,7 +1587,7 @@ export default function UVK5ViewerPage() {
           }}
         >
           <img
-            src="/assets/generated/viewer-pwa-icon-192-transparent.dim_192x192.png"
+            src="/assets/uploads/gemini-2.5-flash-image_create_a_more_refined_version_of_the_image_provided_for_as_reference_does_not_ne-0-1--1.jpg"
             alt="UV-K5 Viewer"
             style={{ width: 24, height: 24, objectFit: "contain" }}
           />
