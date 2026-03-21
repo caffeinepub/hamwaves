@@ -3,8 +3,9 @@
   "short_name": "UV-K5 Mirror",
   "description": "Standalone live LCD mirror and remote control for Quansheng UV-K5 / UV-K1 V3 via WebSerial + F4HWN Fusion firmware.",
   "start_url": "/uv-k5-viewer",
+  "scope": "/uv-k5-viewer",
   "display": "standalone",
-  "background_color": "#0a0a0a",
+  "background_color": "#000000",
   "theme_color": "#00f0ff",
   "orientation": "landscape-primary",
   "icons": [

@@ -14,8 +14,16 @@
     <link rel="icon" href="/assets/generated/favicon-32x32-transparent.dim_32x32.png" type="image/png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/generated/favicon-32x32-transparent.dim_32x32.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/generated/apple-touch-icon.dim_180x180.png" />
-    <!-- PWA -->
-    <link rel="manifest" href="/manifest.json" />
+    <!-- PWA: select correct manifest before browser evaluates installability -->
+    <script>
+      (function(){
+        var isViewer = window.location.pathname === '/uv-k5-viewer' || window.location.pathname.indexOf('/uv-k5-viewer/') === 0;
+        var l = document.createElement('link');
+        l.rel = 'manifest';
+        l.href = isViewer ? '/viewer-manifest.json' : '/manifest.json';
+        document.head.appendChild(l);
+      })();
+    </script>
     <meta name="theme-color" content="#00f0ff" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -26,7 +34,16 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <script type="module" crossorigin src="/assets/index-BtCsWrFp.js"></script>
+    <!-- Capture beforeinstallprompt BEFORE React mounts -->
+    <script>
+      window.__viewerInstallPrompt = null;
+      window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        window.__viewerInstallPrompt = e;
+        window.dispatchEvent(new CustomEvent('viewerinstallready'));
+      });
+    </script>
+    <script type="module" crossorigin src="/assets/index-CDwjftJF.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-C7DPosGw.css">
   </head>
   <body>

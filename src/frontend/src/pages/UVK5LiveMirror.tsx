@@ -820,6 +820,18 @@ export default function UVK5LiveMirror() {
             backdropFilter: "blur(8px)",
           }}
         >
+          {/* Logo */}
+          <img
+            src="/assets/uploads/gemini-2.5-flash-image_create_a_more_refined_version_of_the_image_provided_for_as_reference_does_not_ne-0-1--1.jpg"
+            alt="HamWaves"
+            style={{
+              height: 32,
+              width: 32,
+              objectFit: "contain",
+              borderRadius: 4,
+              flexShrink: 0,
+            }}
+          />
           {/* Connect */}
           <button
             type="button"

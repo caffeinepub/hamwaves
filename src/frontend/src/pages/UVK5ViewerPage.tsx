@@ -810,11 +810,27 @@ export default function UVK5ViewerPage() {
       });
     }
 
+    // Pick up any prompt captured before React mounted
+    const w = window as unknown as { __viewerInstallPrompt?: Event | null };
+    if (w.__viewerInstallPrompt) {
+      setInstallPrompt(w.__viewerInstallPrompt);
+      w.__viewerInstallPrompt = null;
+    }
+
     const handler = (e: Event) => {
       e.preventDefault();
       setInstallPrompt(e);
     };
     window.addEventListener("beforeinstallprompt", handler);
+    // Also listen for our custom early-capture event
+    const readyHandler = () => {
+      const ww = window as unknown as { __viewerInstallPrompt?: Event | null };
+      if (ww.__viewerInstallPrompt) {
+        setInstallPrompt(ww.__viewerInstallPrompt);
+        ww.__viewerInstallPrompt = null;
+      }
+    };
+    window.addEventListener("viewerinstallready", readyHandler);
 
     const checkPWA = () => {
       const standalone =
@@ -835,6 +851,7 @@ export default function UVK5ViewerPage() {
       if (manifestLink && prevHref) manifestLink.href = prevHref;
       if (themeMeta && prevTheme) themeMeta.content = prevTheme;
       window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("viewerinstallready", readyHandler);
       window.removeEventListener("appinstalled", installedHandler);
     };
   }, []);
@@ -1587,7 +1604,7 @@ export default function UVK5ViewerPage() {
           }}
         >
           <img
-            src="/assets/uploads/gemini-2.5-flash-image_create_a_more_refined_version_of_the_image_provided_for_as_reference_does_not_ne-0-1--1.jpg"
+            src="/assets/generated/viewer-pwa-icon-192-transparent.dim_192x192.png"
             alt="UV-K5 Viewer"
             style={{ width: 24, height: 24, objectFit: "contain" }}
           />
